@@ -87,6 +87,30 @@ for question_dict in extracted_dict_list:
         response = agent.run(user_input, callbacks=[st_callback])
         st.write(response)
 
+
+# Initialize chat history
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+# Display chat messages from history
+for message in st.session_state.chat_history:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+for question_dict in extracted_dict_list:
+    user_input = question_dict['question']
+
+    # Save user's message to chat history
+    st.session_state.chat_history.append({"role": "user", "content": user_input})
+
+    with st.chat_message("assistant"):
+        st_callback = StreamlitCallbackHandler(st.container())
+        response = agent.run(user_input, callbacks=[st_callback])
+        st.write(response)
+
+        # Save assistant's response to chat history
+        st.session_state.chat_history.append({"role": "assistant", "content": response})
+
 # for question in extracted_dict_list:
 #     input_text = question['question']
 #     response = chat_with_agent(input_text)
