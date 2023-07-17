@@ -34,7 +34,7 @@ class DocumentInput(BaseModel):
     question: str = Field()
 
 
-llm = ChatOpenAI(temperature=0.5, model="gpt-4")
+llm = ChatOpenAI(temperature=0.5, model="gpt-3.5-turbo-16k")
 
 tools = []
 files = [
@@ -97,19 +97,21 @@ for message in st.session_state.chat_history:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-for question_dict in extracted_dict_list:
-    user_input = question_dict['question']
+if st.button('Start'):
+    # Loop over questions
+    for question_dict in extracted_dict_list:
+        user_input = question_dict['question']
 
-    # Save user's message to chat history
-    st.session_state.chat_history.append({"role": "user", "content": user_input})
+        # Save user's message to chat history
+        st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-    with st.chat_message("assistant"):
-        st_callback = StreamlitCallbackHandler(st.container())
-        response = agent.run(user_input, callbacks=[st_callback])
-        st.write(response)
+        with st.chat_message("assistant"):
+            st_callback = StreamlitCallbackHandler(st.container())
+            response = agent.run(user_input, callbacks=[st_callback])
+            st.write(response)
 
-        # Save assistant's response to chat history
-        st.session_state.chat_history.append({"role": "assistant", "content": response})
+            # Save assistant's response to chat history
+            st.session_state.chat_history.append({"role": "assistant", "content": response})
 
 # for question in extracted_dict_list:
 #     input_text = question['question']
