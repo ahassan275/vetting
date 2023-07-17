@@ -23,8 +23,7 @@ import os
 # from streamlit_agent.clear_results import with_clear_container
 
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
+openai_api_key = st.secrets["OPENAI_API_KEY"]
 
 def chat_with_agent(input_text):
     response = agent({"input": input_text})
