@@ -1,5 +1,7 @@
-streamlit
-langchain
-openai
+streamlit~=1.24.1
+langchain~=0.0.234
+openai~=0.27.8
 tiktoken
 faiss-cpu
+pydantic~=1.10.11
+pypdf
