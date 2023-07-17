@@ -25,6 +25,13 @@ import os
 
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
+MAX_API_CALLS = 25  # set your limit
+
+# Initialize count of API calls
+if "api_calls" not in st.session_state:
+    st.session_state.api_calls = 0
+
+
 def chat_with_agent(input_text):
     response = agent({"input": input_text})
     return response['output']
