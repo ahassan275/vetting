@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from vetting_questions import extracted_dict_list
 from langchain.agents import initialize_agent
 from langchain.agents import AgentType
-import os
+import random
 
 # from streamlit_agent.callbacks.capturing_callback_handler import playback_callbacks
 # from streamlit_agent.clear_results import with_clear_container
@@ -94,7 +94,6 @@ for question_dict in extracted_dict_list:
         response = agent.run(user_input, callbacks=[st_callback])
         st.write(response)
 
-
 # Initialize chat_history
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
@@ -105,8 +104,11 @@ for message in st.session_state.chat_history:
         st.markdown(message["content"])
 
 if st.button('Start'):
-    # Loop over questions
-    for question_dict in extracted_dict_list:
+    # Select 3 random questions
+    selected_questions = random.sample(extracted_dict_list, 3)
+
+    # Loop over selected questions
+    for question_dict in selected_questions:
         user_input = question_dict['question']
 
         # Save user's message to chat history
