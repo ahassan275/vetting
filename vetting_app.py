@@ -71,7 +71,7 @@ for file in files:
 
 llm = ChatOpenAI(
     temperature=0,
-    model="gpt-4",
+    model="gpt-3.5-turbo",
 )
 
 agent = initialize_agent(
@@ -103,24 +103,33 @@ for message in st.session_state.chat_history:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+if "run_count" not in st.session_state:
+    st.session_state.run_count = 0
+
 if st.button('Start'):
-    # Select 3 random questions
-    selected_questions = random.sample(extracted_dict_list, 3)
+    if st.session_state.run_count >= 1:
+        st.warning("You have reached the maximum number of runs for this session.")
+    else:
+        st.session_state.run_count += 1
 
-    # Loop over selected questions
-    for question_dict in selected_questions:
-        user_input = question_dict['question']
+        # Select 3 random questions
+        selected_questions = random.sample(extracted_dict_list, 3)
 
-        # Save user's message to chat history
-        st.session_state.chat_history.append({"role": "user", "content": user_input})
+        # Loop over selected questions
+        for question_dict in selected_questions:
+            user_input = question_dict['question']
 
-        with st.chat_message("assistant"):
-            st_callback = StreamlitCallbackHandler(st.container())
-            response = agent.run(user_input, callbacks=[st_callback])
-            st.write(response)
+            # Save user's message to chat history
+            st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-            # Save assistant's response to chat history
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
+            with st.chat_message("assistant"):
+                st_callback = StreamlitCallbackHandler(st.container())
+                response = agent.run(user_input, callbacks=[st_callback])
+                st.write(response)
+
+                # Save assistant's response to chat history
+                st.session_state.chat_history.append({"role": "assistant", "content": response})
+
 
 # for question in extracted_dict_list:
 #     input_text = question['question']
