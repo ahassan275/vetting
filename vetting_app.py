@@ -18,12 +18,14 @@ from vetting_questions import extracted_dict_list
 from langchain.agents import initialize_agent
 from langchain.agents import AgentType
 import random
+import os
 
 # from streamlit_agent.callbacks.capturing_callback_handler import playback_callbacks
 # from streamlit_agent.clear_results import with_clear_container
 
-
-openai_api_key = st.secrets["OPENAI_API_KEY"]
+#
+# openai_api_key = st.secrets["OPENAI_API_KEY"]
+openai.api_key = os.environ["OPENAI_API_KEY"]
 
 MAX_API_CALLS = 25  # set your limit
 
