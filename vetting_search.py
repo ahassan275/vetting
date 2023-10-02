@@ -13,7 +13,7 @@ from vetting_questions import extracted_questions
 import uuid
 from docx import Document
 import base64
-from langchain.document_loaders.url import UnstructuredURLLoader
+from langchain.document_loaders import SeleniumURLLoader
 import unstructured
 
 
@@ -52,20 +52,15 @@ def process_document(file_path):
 
 @st.cache_data
 def process_url_content(url):
-    try:
-        loader = UnstructuredURLLoader(urls=[url], mode="single")
-        pages = loader.load_and_split()
-        if not pages:
-            raise ValueError("No content was extracted from the provided URL.")
+    loader = SeleniumURLLoader(urls=[url])
+    data = loader.load()
+    # Assuming the data is a list of pages similar to the PDF loader
+    splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+    docs = splitter.split_documents(data)
+    embeddings = OpenAIEmbeddings()
+    retriever = FAISS.from_documents(docs, embeddings).as_retriever()
+    return retriever
 
-        splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-        docs = splitter.split_documents(pages)
-        embeddings = OpenAIEmbeddings()
-        retriever = FAISS.from_documents(docs, embeddings).as_retriever()
-        return retriever
-    except Exception as e:
-        st.error(f"An error occurred while processing the URL content: {e}")
-        return None
 
 
 def google_search(query):
