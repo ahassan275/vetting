@@ -67,13 +67,12 @@ def google_search(query):
 
 
 def handle_uploaded_file(uploaded_file):
+    temp_dir = tempfile.mkdtemp()
     unique_filename = f"uploaded_terms_{uuid.uuid4()}.pdf"
-    file_path = os.path.join("uploaded_documents", unique_filename)
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    file_path = os.path.join(temp_dir, unique_filename)
     with open(file_path, "wb") as f:
         f.write(uploaded_file.getvalue())
     return file_path
-
 
 def vetting_assistant_page():
     st.title("Vetting Assistant Chatbot")
