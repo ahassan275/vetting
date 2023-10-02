@@ -50,16 +50,16 @@ def process_document(file_path):
     return retriever
 
 
-@st.cache_data
-def process_url_content(url):
-    loader = SeleniumURLLoader(urls=[url])
-    data = loader.load()
-    # Assuming the data is a list of pages similar to the PDF loader
-    splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-    docs = splitter.split_documents(data)
-    embeddings = OpenAIEmbeddings()
-    retriever = FAISS.from_documents(docs, embeddings).as_retriever()
-    return retriever
+# @st.cache_data
+# def process_url_content(url):
+#     loader = SeleniumURLLoader(urls=[url])
+#     data = loader.load()
+#     # Assuming the data is a list of pages similar to the PDF loader
+#     splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+#     docs = splitter.split_documents(data)
+#     embeddings = OpenAIEmbeddings()
+#     retriever = FAISS.from_documents(docs, embeddings).as_retriever()
+#     return retriever
 
 
 
@@ -115,8 +115,8 @@ def vetting_assistant_page():
 
         retriever = process_document(file_path)
 
-    elif url_input:
-        retriever = process_url_content(url_input)
+    # elif url_input:
+    #     retriever = process_url_content(url_input)
 
     if retriever:
         llm = ChatOpenAI(temperature=0.5, model="gpt-3.5-turbo-16k")
