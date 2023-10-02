@@ -66,9 +66,9 @@ def google_search(query):
         return []
 
 
-def handle_uploaded_file(uploaded_file_content):
+def handle_uploaded_file(uploaded_file):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        tmp.write(uploaded_file_content)
+        tmp.write(uploaded_file.read())
         return tmp.name
 
 
@@ -78,12 +78,14 @@ def vetting_assistant_page():
     if "uploaded_pdf_content" not in st.session_state:
         uploaded_file = st.file_uploader("Upload a PDF containing the terms of service", type=["pdf"])
         if uploaded_file:
-            st.session_state.uploaded_pdf_content = uploaded_file.getvalue()  # getvalue() returns bytes
-            file_path = handle_uploaded_file(st.session_state.uploaded_pdf_content)
+            st.session_state.uploaded_pdf_content = uploaded_file.read()
+            file_path = handle_uploaded_file(uploaded_file)
             st.session_state.retriever = process_document(file_path)
     else:
-        file_path = handle_uploaded_file(st.session_state.uploaded_pdf_content)
-        st.session_state.retriever = process_document(file_path)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            tmp.write(st.session_state.uploaded_pdf_content)
+            file_path = tmp.name
+            st.session_state.retriever = process_document(file_path)
 
     app_name = st.text_input("Enter the name of the app:")
 
@@ -156,13 +158,14 @@ def pdf_chatbot_page():
     if "uploaded_pdf_content" not in st.session_state:
         uploaded_file = st.file_uploader("Upload a PDF", type=["pdf"])
         if uploaded_file:
-            st.session_state.uploaded_pdf_content = uploaded_file.getvalue()  # getvalue() returns bytes
-            file_path = handle_uploaded_file(st.session_state.uploaded_pdf_content)
+            st.session_state.uploaded_pdf_content = uploaded_file.read()
+            file_path = handle_uploaded_file(uploaded_file)
             st.session_state.retriever = process_document(file_path)
     else:
-        file_path = handle_uploaded_file(st.session_state.uploaded_pdf_content)
-        st.session_state.retriever = process_document(file_path)
-
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            tmp.write(st.session_state.uploaded_pdf_content)
+            file_path = tmp.name
+            st.session_state.retriever = process_document(file_path)
 
     if "retriever" in st.session_state:
         llm = ChatOpenAI(temperature=0.5, model="gpt-3.5-turbo-16k")
