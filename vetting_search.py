@@ -13,18 +13,14 @@ from vetting_questions import extracted_questions
 import uuid
 from docx import Document
 import base64
-import tempfile
-
 
 # Set OpenAI API key
-
-
-# openai.api_key = os.environ["OPENAI_API_KEY"]
-GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
-# GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-# GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
+openai.api_key = os.environ["OPENAI_API_KEY"]
+# GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+# OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+# GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
+GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
 
 
 def get_file_content_as_string(file_path):
@@ -66,34 +62,30 @@ def google_search(query):
         return []
 
 
-def handle_uploaded_file(uploaded_file_content):
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        tmp.write(uploaded_file_content)
-        return tmp.name
+def handle_uploaded_file(uploaded_file):
+    unique_filename = f"uploaded_terms_{uuid.uuid4()}.pdf"
+    file_path = os.path.join("uploaded_documents", unique_filename)
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getvalue())
+    return file_path
 
 
 def vetting_assistant_page():
     st.title("Vetting Assistant Chatbot")
 
-    if "uploaded_pdf_content" not in st.session_state:
-        uploaded_file = st.file_uploader("Upload a PDF containing the terms of service", type=["pdf"])
-        if uploaded_file:
-            st.session_state.uploaded_pdf_content = uploaded_file.getvalue()  # getvalue() returns bytes
-            file_path = handle_uploaded_file(st.session_state.uploaded_pdf_content)
-            st.session_state.retriever = process_document(file_path)
-    else:
-        file_path = handle_uploaded_file(st.session_state.uploaded_pdf_content)
-        st.session_state.retriever = process_document(file_path)
-
+    uploaded_file = st.file_uploader("Upload a PDF containing the terms of service", type=["pdf"])
     app_name = st.text_input("Enter the name of the app:")
 
-    if "retriever" in st.session_state:
+    if uploaded_file:
+        file_path = handle_uploaded_file(uploaded_file)
+        retriever = process_document(file_path)
         llm = ChatOpenAI(temperature=0.5, model="gpt-3.5-turbo-16k")
         tools = [
             Tool(
                 name="vetting_tool",
                 description="Tool for vetting based on document content",
-                func=RetrievalQA.from_chain_type(llm=llm, retriever=st.session_state.retriever)
+                func=RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
             )
         ]
         agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, verbose=True)
@@ -150,20 +142,19 @@ def vetting_assistant_page():
                 for link in links:
                     st.write(link)
 
+
 def pdf_chatbot_page():
     st.title("PDF-based Chatbot")
 
-    if "uploaded_pdf_content" not in st.session_state:
+    if "uploaded_pdf_path" not in st.session_state:
         uploaded_file = st.file_uploader("Upload a PDF", type=["pdf"])
+
         if uploaded_file:
-            st.session_state.uploaded_pdf_content = uploaded_file.read()
             file_path = handle_uploaded_file(uploaded_file)
-            st.session_state.retriever = process_document(file_path)
+            st.session_state.uploaded_pdf_path = file_path
+            st.session_state.retriever = process_document(st.session_state.uploaded_pdf_path)
     else:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            tmp.write(st.session_state.uploaded_pdf_content)
-            file_path = tmp.name
-            st.session_state.retriever = process_document(file_path)
+        st.write("Using previously uploaded PDF. If you want to use a different PDF, please refresh the page.")
 
     if "retriever" in st.session_state:
         llm = ChatOpenAI(temperature=0.5, model="gpt-3.5-turbo-16k")
@@ -216,6 +207,7 @@ def pdf_chatbot_page():
                     st.write("Top search results:")
                     for link in links:
                         st.write(link)
+
 
 # Streamlit UI Configuration
 st.set_page_config(page_title="Vetting Assistant Chatbot", layout="wide", initial_sidebar_state="expanded")
