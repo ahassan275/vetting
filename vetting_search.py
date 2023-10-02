@@ -13,6 +13,7 @@ from vetting_questions import extracted_questions
 import uuid
 from docx import Document
 import base64
+import io
 from langchain.document_loaders import SeleniumURLLoader
 
 
@@ -91,13 +92,14 @@ def handle_uploaded_file(uploaded_file):
 def vetting_assistant_page():
     st.title("Vetting Assistant Chatbot")
 
-    # Check if the file is already in session state
-    if "uploaded_file" not in st.session_state:
+    # Check if the file content is already in session state
+    if "uploaded_file_content" not in st.session_state:
         uploaded_file = st.file_uploader("Upload a PDF containing the terms of service", type=["pdf"])
         if uploaded_file:
-            st.session_state.uploaded_file = uploaded_file
+            st.session_state.uploaded_file_content = uploaded_file.read()
     else:
-        uploaded_file = st.session_state.uploaded_file    # Input field for the app name
+        # If file content is in session state, recreate the file object
+        uploaded_file = io.BytesIO(st.session_state.uploaded_file_content)
 
     app_name = st.text_input("Enter the name of the app:")
 
@@ -205,14 +207,12 @@ def vetting_assistant_page():
 def pdf_chatbot_page():
     st.title("PDF-based Chatbot")
 
-    if "uploaded_pdf_path" not in st.session_state:
+    if "uploaded_pdf_content" not in st.session_state:
         uploaded_file = st.file_uploader("Upload a PDF", type=["pdf"])
         if uploaded_file:
-            file_path = handle_uploaded_file(uploaded_file)
-            st.session_state.uploaded_pdf_path = file_path
-            st.session_state.retriever = process_document(st.session_state.uploaded_pdf_path)
+            st.session_state.uploaded_pdf_content = uploaded_file.read()
     else:
-        st.write("Using previously uploaded PDF. If you want to use a different PDF, please refresh the page.")
+        uploaded_file = io.BytesIO(st.session_state.uploaded_pdf_content)
 
     if "retriever" in st.session_state:
         llm = ChatOpenAI(temperature=0.5, model="gpt-3.5-turbo-16k")
