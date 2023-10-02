@@ -10,3 +10,4 @@ python-docx
 aiohttp~=3.8.4
 selenium
 unstructured
+uuid
