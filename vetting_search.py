@@ -14,7 +14,7 @@ import uuid
 from docx import Document
 import base64
 from langchain.document_loaders import SeleniumURLLoader
-import unstructured
+
 
 
 
