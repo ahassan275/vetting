@@ -14,6 +14,7 @@ import uuid
 from docx import Document
 import base64
 from langchain.document_loaders.url import UnstructuredURLLoader
+import unstructured
 
 
 # Set OpenAI API key
