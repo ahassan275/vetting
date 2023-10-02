@@ -13,14 +13,16 @@ from vetting_questions import extracted_questions
 import uuid
 from docx import Document
 import base64
+from langchain.document_loaders.url import UnstructuredURLLoader
+
 
 # Set OpenAI API key
-# openai.api_key = os.environ["OPENAI_API_KEY"]
-GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
-# GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-# GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
+openai.api_key = os.environ["OPENAI_API_KEY"]
+# GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+# OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+# GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
+GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
 
 
 def get_file_content_as_string(file_path):
@@ -44,6 +46,24 @@ def process_document(file_path):
     embeddings = OpenAIEmbeddings()
     retriever = FAISS.from_documents(docs, embeddings).as_retriever()
     return retriever
+
+
+@st.cache_data
+def process_url_content(url):
+    try:
+        loader = UnstructuredURLLoader(urls=[url], mode="single")
+        pages = loader.load_and_split()
+        if not pages:
+            raise ValueError("No content was extracted from the provided URL.")
+
+        splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+        docs = splitter.split_documents(pages)
+        embeddings = OpenAIEmbeddings()
+        retriever = FAISS.from_documents(docs, embeddings).as_retriever()
+        return retriever
+    except Exception as e:
+        st.error(f"An error occurred while processing the URL content: {e}")
+        return None
 
 
 def google_search(query):
@@ -74,12 +94,34 @@ def handle_uploaded_file(uploaded_file):
 def vetting_assistant_page():
     st.title("Vetting Assistant Chatbot")
 
+    # File uploader for PDFs
     uploaded_file = st.file_uploader("Upload a PDF containing the terms of service", type=["pdf"])
+
+    # Input field for the app name
     app_name = st.text_input("Enter the name of the app:")
 
+    # Input field for URL
+    url_input = st.text_input("Enter a URL to extract content:")
+
+    retriever = None
+
     if uploaded_file:
-        file_path = handle_uploaded_file(uploaded_file)
+        # Generate a unique filename using uuid
+        unique_filename = f"uploaded_terms_{uuid.uuid4()}.pdf"
+        file_path = os.path.join("uploaded_documents", unique_filename)
+
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getvalue())
+
         retriever = process_document(file_path)
+
+    elif url_input:
+        retriever = process_url_content(url_input)
+
+    if retriever:
         llm = ChatOpenAI(temperature=0.5, model="gpt-3.5-turbo-16k")
         tools = [
             Tool(
@@ -88,10 +130,15 @@ def vetting_assistant_page():
                 func=RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
             )
         ]
+
         agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, verbose=True)
 
         st.write("Ask any question related to the vetting process:")
+
+        # Dropdown for predefined questions
         query_option = st.selectbox("Choose a predefined query:", extracted_questions)
+
+        # Text input for custom question or modification
         user_input = st.text_input("Your Question:", value=query_option)
 
         if st.button('Start Vetting') and user_input:
@@ -102,23 +149,30 @@ def vetting_assistant_page():
                 except Exception as e:
                     st.error(f"An error occurred: {e}")
 
-        st.write("Note: The chatbot retrieves answers from the uploaded document.")
+        st.write("Note: The chatbot retrieves answers from the uploaded document or provided URL.")
 
+        # Initialize session state variable for running queries
         if 'running_queries' not in st.session_state:
             st.session_state.running_queries = False
 
+        # Placeholder message to be appended to each query
         placeholder_message = f"{app_name} is being vetted for compliance and its policies provided in context. Does {app_name} meet this criteria?"
-        all_queries = [f"{question} {placeholder_message}" for question in extracted_questions]
 
+        # Button to run all queries
         if st.button('Run All Queries'):
             with st.spinner('Processing all queries...'):
                 st.session_state.running_queries = True
                 doc = Document()
                 doc.add_heading('Vetting Assistant Responses', 0)
 
+                # Append the user's custom query and the placeholder message to the list of predefined queries
+                all_queries = [f"{question} {placeholder_message}" for question in extracted_questions]
+
                 for question in all_queries:
+                    # Check if we should stop running queries
                     if not st.session_state.running_queries:
                         break
+
                     try:
                         response = agent.run(question)
                         doc.add_heading('Q:', level=1)
@@ -128,10 +182,14 @@ def vetting_assistant_page():
                     except Exception as e:
                         doc.add_paragraph(f"Error for question '{question}': {e}")
 
+                # Save the document
                 doc_path = "vetting_responses.docx"
                 doc.save(doc_path)
+
+                # Provide a download link
                 st.markdown(create_download_link(doc_path, "vetting_responses.docx"), unsafe_allow_html=True)
 
+        # Button to stop all queries
         if st.button('Stop Queries'):
             st.session_state.running_queries = False
 
