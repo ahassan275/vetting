@@ -5,3 +5,6 @@ tiktoken
 faiss-cpu
 pydantic~=1.10.11
 pypdf
+requests~=2.31.0
+python-docx
+aiohttp~=3.8.4
