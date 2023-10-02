@@ -17,12 +17,12 @@ from langchain.document_loaders.url import UnstructuredURLLoader
 
 
 # Set OpenAI API key
-openai.api_key = os.environ["OPENAI_API_KEY"]
-# GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-# OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-# GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
-GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
+# openai.api_key = os.environ["OPENAI_API_KEY"]
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
+# GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+# GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
 
 
 def get_file_content_as_string(file_path):
