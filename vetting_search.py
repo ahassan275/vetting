@@ -17,6 +17,7 @@ from langchain.document_loaders.url import UnstructuredURLLoader
 import unstructured
 
 
+
 # Set OpenAI API key
 # openai.api_key = os.environ["OPENAI_API_KEY"]
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
