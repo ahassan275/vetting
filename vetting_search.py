@@ -91,10 +91,14 @@ def handle_uploaded_file(uploaded_file):
 def vetting_assistant_page():
     st.title("Vetting Assistant Chatbot")
 
-    # File uploader for PDFs
-    uploaded_file = st.file_uploader("Upload a PDF containing the terms of service", type=["pdf"])
+    # Check if the file is already in session state
+    if "uploaded_file" not in st.session_state:
+        uploaded_file = st.file_uploader("Upload a PDF containing the terms of service", type=["pdf"])
+        if uploaded_file:
+            st.session_state.uploaded_file = uploaded_file
+    else:
+        uploaded_file = st.session_state.uploaded_file    # Input field for the app name
 
-    # Input field for the app name
     app_name = st.text_input("Enter the name of the app:")
 
     # Input field for URL
@@ -203,7 +207,6 @@ def pdf_chatbot_page():
 
     if "uploaded_pdf_path" not in st.session_state:
         uploaded_file = st.file_uploader("Upload a PDF", type=["pdf"])
-
         if uploaded_file:
             file_path = handle_uploaded_file(uploaded_file)
             st.session_state.uploaded_pdf_path = file_path
