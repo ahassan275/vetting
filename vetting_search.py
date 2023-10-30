@@ -62,30 +62,37 @@ def google_search(query):
         return []
 
 
+import tempfile
+
+
 def handle_uploaded_file(uploaded_file):
-    unique_filename = f"uploaded_terms_{uuid.uuid4()}.pdf"
-    file_path = os.path.join("uploaded_documents", unique_filename)
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, "wb") as f:
-        f.write(uploaded_file.getvalue())
-    return file_path
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(uploaded_file.getvalue())
+        return tmp.name
 
 
 def vetting_assistant_page():
     st.title("Vetting Assistant Chatbot")
 
-    uploaded_file = st.file_uploader("Upload a PDF containing the terms of service", type=["pdf"])
+    if "uploaded_pdf_path" not in st.session_state or "retriever" not in st.session_state:
+        uploaded_file = st.file_uploader("Upload a PDF containing the terms of service", type=["pdf"])
+
+        if uploaded_file:
+            file_path = handle_uploaded_file(uploaded_file)
+            st.session_state.uploaded_pdf_path = file_path
+            st.session_state.retriever = process_document(st.session_state.uploaded_pdf_path)
+    else:
+        st.write("Using previously uploaded PDF. If you want to use a different PDF, please refresh the page.")
+
     app_name = st.text_input("Enter the name of the app:")
 
-    if uploaded_file:
-        file_path = handle_uploaded_file(uploaded_file)
-        retriever = process_document(file_path)
+    if "retriever" in st.session_state:
         llm = ChatOpenAI(temperature=0.5, model="gpt-3.5-turbo-16k")
         tools = [
             Tool(
                 name="vetting_tool",
                 description="Tool for vetting based on document content",
-                func=RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
+                func=RetrievalQA.from_chain_type(llm=llm, retriever=st.session_state.retriever)
             )
         ]
         agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, verbose=True)
