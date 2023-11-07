@@ -104,7 +104,7 @@ def vetting_assistant_page():
         )
         tools = [tool]
         # agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, verbose=True)
-        agent = create_conversational_retrieval_agent(llm, tools, verbose=True)
+        agent = create_conversational_retrieval_agent(llm, tools)
 
         st.write("Ask any question related to the vetting process:")
         query_option = st.selectbox("Choose a predefined query:", extracted_questions)
