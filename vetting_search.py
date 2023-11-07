@@ -100,7 +100,7 @@ def vetting_assistant_page():
         tool = create_retriever_tool(
             st.session_state.retriever,
             "search_terms_service",
-            "Searches and returns documents regarding the an application's privacy and data policies and terms of use.",
+            "Searches and returns an application's privacy and data policies and terms of use.",
         )
         tools = [tool]
         # agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, verbose=True)
