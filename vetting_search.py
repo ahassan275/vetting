@@ -113,7 +113,8 @@ def vetting_assistant_page():
         if st.button('Start Vetting') and user_input:
             with st.spinner('Processing your question...'):
                 try:
-                    response = agent.run(user_input)
+                    # response = agent.run(user_input)
+                    response = agent({"input": "user_input"})
                     st.write(f"Answer: {response}")
                 except Exception as e:
                     st.error(f"An error occurred: {e}")
