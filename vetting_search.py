@@ -13,6 +13,8 @@ from vetting_questions import extracted_questions
 import uuid
 from docx import Document
 import base64
+from langchain.agents.agent_toolkits import create_retriever_tool
+from langchain.agents.agent_toolkits import create_conversational_retrieval_agent
 
 # Set OpenAI API key
 openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -88,14 +90,21 @@ def vetting_assistant_page():
 
     if "retriever" in st.session_state:
         llm = ChatOpenAI(temperature=0.5, model="gpt-3.5-turbo-16k")
-        tools = [
-            Tool(
-                name="vetting_tool",
-                description="Tool for vetting based on document content",
-                func=RetrievalQA.from_chain_type(llm=llm, retriever=st.session_state.retriever)
-            )
-        ]
-        agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, verbose=True)
+        # tools = [
+        #     Tool(
+        #         name="vetting_tool",
+        #         description="Tool for vetting based on document content",
+        #         func=RetrievalQA.from_chain_type(llm=llm, retriever=st.session_state.retriever)
+        #     )
+        # ]
+        tool = create_retriever_tool(
+            st.session_state.retriever,
+            "search_terms_service",
+            "Searches and returns documents regarding the an application's privacy and data policies and terms of use.",
+        )
+        tools = [tool]
+        # agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, verbose=True)
+        agent = create_conversational_retrieval_agent(llm, tools, verbose=True)
 
         st.write("Ask any question related to the vetting process:")
         query_option = st.selectbox("Choose a predefined query:", extracted_questions)
