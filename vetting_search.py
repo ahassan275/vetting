@@ -17,12 +17,12 @@ from langchain.agents.agent_toolkits import create_retriever_tool
 from langchain.agents.agent_toolkits import create_conversational_retrieval_agent
 
 # Set OpenAI API key
-openai.api_key = os.environ["OPENAI_API_KEY"]
-# GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-# OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-# GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
-GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
+# openai.api_key = os.environ["OPENAI_API_KEY"]
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
+# GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+# GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
 
 
 def get_file_content_as_string(file_path):
@@ -37,7 +37,7 @@ def create_download_link(file_path, file_name):
     return href
 
 
-@st.cache_data
+@st.cache_resource
 def process_document(file_path):
     loader = PyPDFLoader(file_path)
     pages = loader.load_and_split()
@@ -90,21 +90,21 @@ def vetting_assistant_page():
 
     if "retriever" in st.session_state:
         llm = ChatOpenAI(temperature=0.5, model="gpt-3.5-turbo-16k")
-        # tools = [
-        #     Tool(
-        #         name="vetting_tool",
-        #         description="Tool for vetting based on document content",
-        #         func=RetrievalQA.from_chain_type(llm=llm, retriever=st.session_state.retriever)
-        #     )
-        # ]
-        tool = create_retriever_tool(
-            st.session_state.retriever,
-            "search_terms_service",
-            "Searches and returns an application's privacy and data policies and terms of use.",
-        )
-        tools = [tool]
-        # agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, verbose=True)
-        agent = create_conversational_retrieval_agent(llm, tools)
+        tools = [
+            Tool(
+                name="vetting_tool",
+                description="Tool for vetting based on document content",
+                func=RetrievalQA.from_chain_type(llm=llm, retriever=st.session_state.retriever, return_source_documents=True)
+            )
+        ]
+        # tool = create_retriever_tool(
+        #     st.session_state.retriever,
+        #     "search_terms_service",
+        #     "Searches and returns an application's privacy and data policies and terms of use.",
+        # )
+        # tools = [tool]
+        agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, verbose=True)
+        # agent = create_conversational_retrieval_agent(llm, tools)
 
         st.write("Ask any question related to the vetting process:")
         query_option = st.selectbox("Choose a predefined query:", extracted_questions)
@@ -113,8 +113,8 @@ def vetting_assistant_page():
         if st.button('Start Vetting') and user_input:
             with st.spinner('Processing your question...'):
                 try:
-                    # response = agent.run(user_input)
-                    response = agent({"input": "user_input"})
+                    response = agent.run(user_input)
+                    # response = agent({"input": "user_input"})
                     st.write(f"Answer: {response}")
                 except Exception as e:
                     st.error(f"An error occurred: {e}")
