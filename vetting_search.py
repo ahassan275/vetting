@@ -6,23 +6,25 @@ from langchain.chains import RetrievalQA
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
+from langchain_core.prompts import PromptTemplate
 import openai
 import os
 import requests
 from vetting_questions import extracted_questions
 import uuid
 from docx import Document
+from langchain.schema import SystemMessage
 import base64
 from langchain.agents.agent_toolkits import create_retriever_tool
 from langchain.agents.agent_toolkits import create_conversational_retrieval_agent
 
 # Set OpenAI API key
-# openai.api_key = os.environ["OPENAI_API_KEY"]
-GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
-# GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-# GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
+openai.api_key = os.environ["OPENAI_API_KEY"]
+# GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+# OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+# GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
+GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
 
 
 def get_file_content_as_string(file_path):
@@ -93,8 +95,8 @@ def vetting_assistant_page():
         tools = [
             Tool(
                 name="vetting_tool",
-                description="Tool for vetting based on document content",
-                func=RetrievalQA.from_chain_type(llm=llm, retriever=st.session_state.retriever, return_source_documents=True)
+                description="Tool for retrieving infomration related to security and privacy",
+                func=RetrievalQA.from_llm(llm=llm, retriever=st.session_state.retriever, return_source_documents=True)
             )
         ]
         # tool = create_retriever_tool(
@@ -103,7 +105,16 @@ def vetting_assistant_page():
         #     "Searches and returns an application's privacy and data policies and terms of use.",
         # )
         # tools = [tool]
-        agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, verbose=True)
+        agent_kwargs = {
+            "system_message": SystemMessage(content="You are an intelligent Vetting Assistant, "
+                                                    "expertly designed to analyze and extract key "
+                                                    "information from terms of service documents. "
+                                                    "Your goal is to assist users in understanding "
+                                                    "complex legal documents and provide clear, "
+                                                    "concise answers to their queries.")
+        }
+        agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, agent_kwargs=agent_kwargs,
+                                 verbose=True)
         # agent = create_conversational_retrieval_agent(llm, tools)
 
         st.write("Ask any question related to the vetting process:")
@@ -182,7 +193,16 @@ def pdf_chatbot_page():
                 func=RetrievalQA.from_chain_type(llm=llm, retriever=st.session_state.retriever)
             )
         ]
-        agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, verbose=True)
+        agent_kwargs = {
+            "system_message": SystemMessage(content="You are an intelligent Vetting Assistant, "
+                                                    "expertly designed to analyze and extract key "
+                                                    "information from terms of service documents. "
+                                                    "Your goal is to assist users in understanding "
+                                                    "complex legal documents and provide clear, "
+                                                    "concise answers to their queries.")
+        }
+        agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, agent_kwargs=agent_kwargs,
+                                 verbose=True)
 
         instructions_container = st.container()
         with instructions_container:
