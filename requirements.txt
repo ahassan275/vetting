@@ -16,3 +16,4 @@ langchain-openai
 langchain-hub
 langchain-openai
 langchain-core
+langchainhub
