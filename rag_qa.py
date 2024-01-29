@@ -6,7 +6,7 @@ from langchain import hub
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.prompts import PromptTemplate
 from langchain_community.chat_models import ChatOpenAI
-# from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.embeddings.openai import OpenAIEmbeddings
 # from langchain_openai import OpenAIEmbeddings
 from langchain.tools.retriever import create_retriever_tool
 from langchain.agents import AgentExecutor, create_openai_tools_agent
@@ -27,7 +27,7 @@ from langchain.memory import ConversationBufferMemory
 import getpass
 import os
 # from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
+# from langchain_openai import OpenAIEmbeddings
 from langchain.agents import AgentType, initialize_agent, Tool
 from vetting_questions import extracted_questions
 from langchain.schema import SystemMessage
