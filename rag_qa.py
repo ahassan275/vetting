@@ -300,8 +300,8 @@ def vetting_assistant_page():
     st.title("Vetting Assistant Chatbot")
 
     if "uploaded_pdf_path" not in st.session_state or "retriever" not in st.session_state:
-        # uploaded_file = st.file_uploader("Upload a PDF containing the terms of service", type=["pdf"])
-        uploaded_file = st.file_uploader("Upload Documents (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"], accept_multiple_files=True)
+        uploaded_file = st.file_uploader("Upload a PDF containing the terms of service", type=["pdf"])
+        # uploaded_file = st.file_uploader("Upload Documents (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"], accept_multiple_files=True)
 
         if uploaded_file:
             file_path = handle_uploaded_file(uploaded_file)
