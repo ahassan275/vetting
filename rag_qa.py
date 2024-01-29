@@ -304,7 +304,7 @@ def vetting_assistant_page():
         # uploaded_file = st.file_uploader("Upload Documents (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"], accept_multiple_files=True)
 
         if uploaded_file:
-            file_path = handle_uploaded_file(uploaded_file)
+            file_path = handle_uploaded_files(uploaded_file)
             st.session_state.uploaded_pdf_path = file_path
             st.session_state.retriever = process_documents(st.session_state.uploaded_pdf_path)
     else:
