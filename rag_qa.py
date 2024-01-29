@@ -7,7 +7,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.prompts import PromptTemplate
 from langchain_community.chat_models import ChatOpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain_openai import OpenAIEmbeddings
+# from langchain_openai import OpenAIEmbeddings
 from langchain.tools.retriever import create_retriever_tool
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain import hub
