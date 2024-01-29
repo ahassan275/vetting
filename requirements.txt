@@ -12,4 +12,4 @@ selenium
 unstructured
 uuid
 langchain-community
-
+langchain_openai
