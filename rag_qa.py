@@ -26,7 +26,7 @@ from langchain_community.document_loaders import TextLoader
 from langchain.memory import ConversationBufferMemory
 import getpass
 import os
-from langchain_openai import ChatOpenAI
+# from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
 from langchain.agents import AgentType, initialize_agent, Tool
 from vetting_questions import extracted_questions
