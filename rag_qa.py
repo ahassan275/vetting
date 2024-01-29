@@ -6,7 +6,7 @@ from langchain import hub
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.prompts import PromptTemplate
 from langchain_community.chat_models import ChatOpenAI
-from langchain.embeddings.openai import OpenAIEmbeddings
+# from langchain.embeddings.openai import OpenAIEmbeddings
 # from langchain_openai import OpenAIEmbeddings
 from langchain.tools.retriever import create_retriever_tool
 from langchain.agents import AgentExecutor, create_openai_tools_agent
@@ -26,8 +26,8 @@ from langchain_community.document_loaders import TextLoader
 from langchain.memory import ConversationBufferMemory
 import getpass
 import os
-# from langchain_openai import ChatOpenAI
-# from langchain_openai import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
 from langchain.agents import AgentType, initialize_agent, Tool
 from vetting_questions import extracted_questions
 from langchain.schema import SystemMessage
@@ -36,7 +36,7 @@ from docx import Document
 from langchain.chains import RetrievalQA
 import requests
 from langchain.text_splitter import CharacterTextSplitter
-
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 # Streamlit UI setup for multi-page application
 st.set_page_config(page_title="RAG Demonstration APP", layout="wide", initial_sidebar_state="expanded")
@@ -258,7 +258,14 @@ def document_search_retrieval_page():
         tavily_search_tool = TavilySearchResults()
         llm = ChatOpenAI(model_name="gpt-4", temperature=0.7)
         tools = [pdf_retriever_tool, tavily_search_tool]
-        agent_prompt = hub.pull("hwchase17/openai-tools-agent")
+        agent_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", "You are a helpful assistant"),
+                MessagesPlaceholder("chat_history", optional=True),
+                ("human", "{input}"),
+                MessagesPlaceholder("agent_scratchpad"),
+            ]
+        )
         agent = create_openai_tools_agent(llm, tools, agent_prompt)
         agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory)
 
