@@ -12,5 +12,7 @@ selenium
 unstructured
 uuid
 langchain-community
-langchain_openai
+langchain-openai
 langchainhub
+langchain-openai
+langchain-core
