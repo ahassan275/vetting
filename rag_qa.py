@@ -35,6 +35,7 @@ import base64
 from docx import Document
 from langchain.chains import RetrievalQA
 import requests
+from langchain.text_splitter import CharacterTextSplitter
 
 
 # Streamlit UI setup for multi-page application
@@ -137,6 +138,16 @@ def process_document(file_paths):
     
     embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
     retriever = FAISS.from_documents(docs, embeddings)
+    return retriever
+
+@st.cache_resource
+def process_documents(file_path):
+    loader = PyPDFLoader(file_path)
+    pages = loader.load_and_split()
+    splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+    docs = splitter.split_documents(pages)
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+    retriever = FAISS.from_documents(docs, embeddings).as_retriever()
     return retriever
 
 def handle_uploaded_files(uploaded_file):
@@ -295,7 +306,7 @@ def vetting_assistant_page():
         if uploaded_file:
             file_path = handle_uploaded_file(uploaded_file)
             st.session_state.uploaded_pdf_path = file_path
-            st.session_state.retriever = process_document(st.session_state.uploaded_pdf_path)
+            st.session_state.retriever = process_documents(st.session_state.uploaded_pdf_path)
     else:
         st.write("Using previously uploaded PDF. If you want to use a different PDF, please refresh the page.")
 
