@@ -82,6 +82,7 @@ def embed_and_index(docs):
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
+import tempfile
 
 
 # Function to read file content as string
@@ -137,6 +138,11 @@ def process_document(file_paths):
     embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
     retriever = FAISS.from_documents(docs, embeddings)
     return retriever
+
+def handle_uploaded_files(uploaded_file):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(uploaded_file.getvalue())
+        return tmp.name
 
 # Function to handle the uploaded files and return paths
 def handle_uploaded_file(uploaded_files):
@@ -286,7 +292,7 @@ def vetting_assistant_page():
         uploaded_file = st.file_uploader("Upload a PDF containing the terms of service", type=["pdf"])
 
         if uploaded_file:
-            file_path = handle_uploaded_file(uploaded_file)
+            file_path = handle_uploaded_files(uploaded_file)
             st.session_state.uploaded_pdf_path = file_path
             st.session_state.retriever = process_document(st.session_state.uploaded_pdf_path)
     else:
