@@ -1,5 +1,5 @@
 streamlit~=1.24.1
-langchain~=0.0.234
+langchain
 openai
 tiktoken
 faiss-cpu
@@ -11,3 +11,5 @@ aiohttp~=3.8.4
 selenium
 unstructured
 uuid
+langchain-community
+
