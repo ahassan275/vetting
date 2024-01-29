@@ -152,7 +152,7 @@ def resume_cover_letter_page():
 # Prompt Template
     prompt_template = """
     {chat_history}
-    As a Multifaceted Writer, your task is to create a document that reflects the requirements and nuances of the provided information. Utilize the retrieved documents {context} to inform the substance, style, and tone of your output. Your creation should directly address the user query {message}  and incorporate any specific instructions or additional details {additonal_context} provided.
+    As a Multifaceted Writer, your task is to create a document that reflects the requirements and nuances of the provided information. Utilize the retrieved documents {context} to inform the substance, style, and tone of your output. Your creation should directly address the user query {message}  and incorporate any specific instructions or additional details {additional_context} provided.
 
     - Context: {context}
     (This section contains documents related to your query, offering background and examples relevant to your task.)
