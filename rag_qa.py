@@ -217,7 +217,7 @@ def resume_cover_letter_page():
 
         if st.button("Generate Document"):
             with st.spinner('Generating your document...'):
-                docs = retriever.similarity_search(query=message, k=3)
+                docs = retriever.similarity_search(query=message, k=2)
                 inputs = [{"context": doc.page_content, "message": message, "additional_context": additional_context, "chat_history": memory} for doc in docs]
                 results = chain.apply(inputs)
                 text_results = []
