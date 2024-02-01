@@ -240,7 +240,7 @@ def resume_cover_letter_page():
         
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you live to choose',('gpt-4', 'gpt-3.5-turbo-16k'))
+            chat_model = st.selectbox('What model would you live to choose',('gpt-4', 'gpt-3.5-turbo-1106'))
             llm.model_name = chat_model
 
         if st.button("Generate Document"):
@@ -304,7 +304,7 @@ def document_search_retrieval_page():
         
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you live to choose',('gpt-4', 'gpt-3.5-turbo-16k'))
+            chat_model = st.selectbox('What model would you live to choose',('gpt-4', 'gpt-3.5-turbo-1106'))
             llm.model_name = chat_model
 
         chat_container = st.container()
@@ -358,7 +358,7 @@ def vetting_assistant_page():
     app_name = st.text_input("Enter the name of the app:")
 
     if "retriever" in st.session_state:
-        llm = ChatOpenAI(temperature=0.3, model="gpt-3.5-turbo-16k")
+        llm = ChatOpenAI(temperature=0.3, model="gpt-3.5-turbo-1106")
         tools = [
             Tool(
                 name="vetting_tool",
@@ -392,7 +392,7 @@ def vetting_assistant_page():
         
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you live to choose',('gpt-4', 'gpt-3.5-turbo-16k'))
+            chat_model = st.selectbox('What model would you live to choose',('gpt-4', 'gpt-3.5-turbo-1106'))
             llm.model_name = chat_model
 
         st.write("Ask any question related to the vetting process:")
