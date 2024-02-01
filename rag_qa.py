@@ -39,7 +39,22 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 # Streamlit UI setup for multi-page application
-st.set_page_config(page_title="RAG Demonstration APP", layout="wide", initial_sidebar_state="expanded")
+# DESIGN implement changes to the standard streamlit UI/UX
+st.set_page_config(page_title="RAG Demonstration APP", layout="wide", initial_sidebar_state="expanded", page_icon="logo.png")
+
+
+# Design move app further up and remove top padding
+st.markdown('''<style>.css-1egvi7u {margin-top: -4rem;}</style>''',
+    unsafe_allow_html=True)
+# Design change hyperlink href link color
+st.markdown('''<style>.css-znku1x a {color: #9d03fc;}</style>''',
+    unsafe_allow_html=True)  # darkmode
+st.markdown('''<style>.css-znku1x a {color: #9d03fc;}</style>''',
+    unsafe_allow_html=True)  # lightmode
+# Design hide "made with streamlit" footer menu area
+hide_streamlit_footer = """<style>#MainMenu {visibility: hidden;}
+                        footer {visibility: hidden;}</style>"""
+st.markdown(hide_streamlit_footer, unsafe_allow_html=True)
 
 
 # Set your OpenAI API key here
@@ -64,6 +79,7 @@ api_key = st.secrets["TAVILY_API_KEY"]
 
 # Setting the environment variable
 os.environ["TAVILY_API_KEY"] = api_key
+
 
 
 # Define functions for document processing
@@ -165,7 +181,7 @@ def handle_uploaded_file(uploaded_files):
     return file_paths
 
 def resume_cover_letter_page():
-    st.subheader("Document Generator")
+    # st.subheader("Document Generator")
 # Prompt Template
     prompt_template = """
     {chat_history}
@@ -202,7 +218,9 @@ def resume_cover_letter_page():
     chain = LLMChain(llm=llm, prompt=PROMPT, verbose=True, memory=memory)
 
     # Streamlit UI setup
-    st.title("VectorDB Document Generator")
+    st.subheader("VectorDB Document Generator")
+
+    
 
     # Upload PDF and process it
     uploaded_file = st.file_uploader("Upload Documents (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"], accept_multiple_files=True)
@@ -214,6 +232,16 @@ def resume_cover_letter_page():
         # Input fields for job description and custom instructions
         message = st.text_area("Additional context", "Enter information here...")
         additional_context = st.text_area("Custom instructions", "Enter any specific instructions or additional context here...")
+
+        input_container = st.container()
+        with input_container:
+            temperature = st.slider("Adjust chatbot specificity:", min_value=0.0, max_value=1.0, value=0.5, step=0.05)
+            llm.temperature = temperature
+        
+        input_container = st.container()
+        with input_container:
+            chat_model = st.selectbox('What model would you live to choose',('gpt-4', 'gpt-3.5-turbo-16k'))
+            llm.model_name = chat_model
 
         if st.button("Generate Document"):
             with st.spinner('Generating your document...'):
@@ -268,6 +296,16 @@ def document_search_retrieval_page():
         )
         agent = create_openai_tools_agent(llm, tools, agent_prompt)
         agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory)
+
+        input_container = st.container()
+        with input_container:
+            temperature = st.slider("Adjust chatbot specificity:", min_value=0.0, max_value=1.0, value=0.5, step=0.05)
+            llm.temperature = temperature
+        
+        input_container = st.container()
+        with input_container:
+            chat_model = st.selectbox('What model would you live to choose',('gpt-4', 'gpt-3.5-turbo-16k'))
+            llm.model_name = chat_model
 
         chat_container = st.container()
         with chat_container:
@@ -347,6 +385,16 @@ def vetting_assistant_page():
                                  verbose=True)
         # agent = create_conversational_retrieval_agent(llm, tools)
 
+        input_container = st.container()
+        with input_container:
+            temperature = st.slider("Adjust chatbot specificity:", min_value=0.0, max_value=1.0, value=0.5, step=0.05)
+            llm.temperature = temperature
+        
+        input_container = st.container()
+        with input_container:
+            chat_model = st.selectbox('What model would you live to choose',('gpt-4', 'gpt-3.5-turbo-16k'))
+            llm.model_name = chat_model
+
         st.write("Ask any question related to the vetting process:")
         query_option = st.selectbox("Choose a predefined query:", extracted_questions)
         user_input = st.text_input("Your Question:", value=query_option)
@@ -401,7 +449,13 @@ def vetting_assistant_page():
                     st.write(link)
 
 # Streamlit UI setup for multi-page application
-st.title("Document Processing and Retrieval Application")
+st.image('img/image.png')
+st.title(":blue[Document Processing and Retrieval Application]")
+st.markdown('Generate professional sounding emails based on your direct comments - powered by Artificial Intelligence (OpenAI GPT-3) Implemented by '
+        '[stefanrmmr](https://www.linkedin.com/in/stefanrmmr/) - '
+        'view project source code on '
+        '[GitHub](https://github.com/stefanrmmr/gpt3_email_generator)')
+st.write('\n')  # add spacing
 page = st.sidebar.selectbox("Choose a Tool:", ["VectorDB Document Generator", "Document Search and Retrieval", "Vetting Assistant"])
 
 # Load respective pages
