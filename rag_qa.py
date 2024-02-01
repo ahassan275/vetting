@@ -362,7 +362,7 @@ def vetting_assistant_page():
         tools = [
             Tool(
                 name="vetting_tool",
-                description="Tool for retrieving infomration related to security and privacy",
+                description="Tool for retrieving infomration related to security and privacy. Input should be a search query or a given action for information retrieval and generation.",
                 func=RetrievalQA.from_llm(llm=llm, retriever=st.session_state.retriever, return_source_documents=True)
             )
         ]
@@ -379,7 +379,7 @@ def vetting_assistant_page():
                                                     "Your goal is to assist users in understanding "
                                                     "complex legal documents and provide clear, "
                                                     "concise answers to their queries. Use only the retrieved data from the pdf when responding to questions."
-                                                    "Include citations including section and page number with your response")
+                                                    "Include citations including section and page number with your response. ")
         }
         agent = initialize_agent(agent=AgentType.OPENAI_FUNCTIONS, tools=tools, llm=llm, agent_kwargs=agent_kwargs,
                                  verbose=True)
@@ -451,10 +451,10 @@ def vetting_assistant_page():
 # Streamlit UI setup for multi-page application
 st.image('img/image.png')
 st.title(":blue[Document Processing and Retrieval Application]")
-st.markdown('Generate professional sounding emails based on your direct comments - powered by Artificial Intelligence (OpenAI GPT-3) Implemented by '
-        '[stefanrmmr](https://www.linkedin.com/in/stefanrmmr/) - '
-        'view project source code on '
-        '[GitHub](https://github.com/stefanrmmr/gpt3_email_generator)')
+st.markdown('Generate engaging documents and chat over your files based on your direct quries - powered by Artificial Intelligence (OpenAI GPT-4 and GPT-3.5) Implemented by PCM')
+        # '[stefanrmmr](https://www.linkedin.com/in/stefanrmmr/) - '
+        # 'view project source code on '
+        # '[GitHub](https://github.com/stefanrmmr/gpt3_email_generator)'
 st.write('\n')  # add spacing
 page = st.sidebar.selectbox("Choose a Tool:", ["VectorDB Document Generator", "Document Search and Retrieval", "Vetting Assistant"])
 
