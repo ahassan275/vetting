@@ -5,15 +5,14 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain import hub
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.prompts import PromptTemplate
-from langchain_community.chat_models import ChatOpenAI
+# from langchain_community.chat_models import ChatOpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
 # from langchain_openai import OpenAIEmbeddings
 from langchain.tools.retriever import create_retriever_tool
 from langchain.agents import AgentExecutor, create_openai_tools_agent
-from langchain import hub
+# from langchain import hub
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain.schema import format_document
-from langchain.memory import ConversationBufferMemory
 from langchain.prompts.prompt import PromptTemplate
 import streamlit as st
 import tempfile
@@ -37,6 +36,7 @@ from langchain.chains import RetrievalQA
 import requests
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
 
 # Streamlit UI setup for multi-page application
 # DESIGN implement changes to the standard streamlit UI/UX
@@ -75,10 +75,10 @@ GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
 # # Now you can use the environment variable in your application
 # print("API Key set successfully!")
 
-api_key = st.secrets["TAVILY_API_KEY"]
+# api_key = st.secrets["TAVILY_API_KEY"]
 
-# Setting the environment variable
-os.environ["TAVILY_API_KEY"] = api_key
+# # Setting the environment variable
+# os.environ["TAVILY_API_KEY"] = api_key
 
 
 
@@ -214,7 +214,7 @@ def resume_cover_letter_page():
     memory = ConversationBufferMemory(memory_key="chat_history")
 
     # Initialize the LLM and LLMChain 
-    llm = ChatOpenAI(model_name='gpt-4')
+    llm = ChatOpenAI()
     chain = LLMChain(llm=llm, prompt=PROMPT, verbose=True, memory=memory)
 
     # Streamlit UI setup
@@ -240,12 +240,12 @@ def resume_cover_letter_page():
         
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you live to choose',('gpt-4', 'gpt-3.5-turbo-1106'))
+            chat_model = st.selectbox('What model would you live to choose',('gpt-4-0125-preview', 'gpt-3.5-turbo-0125'))
             llm.model_name = chat_model
 
         if st.button("Generate Document"):
             with st.spinner('Generating your document...'):
-                docs = retriever.similarity_search(query=message, k=2)
+                docs = retriever.similarity_search(query=message, k=4, fetch_k=10)
                 inputs = [{"context": doc.page_content, "message": message, "additional_context": additional_context, "chat_history": memory} for doc in docs]
                 results = chain.apply(inputs)
                 text_results = []
@@ -277,18 +277,17 @@ def document_search_retrieval_page():
         pdf_retriever_tool = create_retriever_tool(
             pdf_retriever,
             "document_question_and_answer_and_generation",
-            "Useful for when you need to answer questions about the uploaeded document. Input should be a search query or a given action for information retrieval and generation.\
-            '"
+            "Useful for when you need to answer questions about the uploaeded document. Input should be a search query or a given action for information retrieval and generation. Please answer thoroghly and thoughfully."
         )
 
         memory = ConversationBufferMemory()
 
         tavily_search_tool = TavilySearchResults()
-        llm = ChatOpenAI(model_name="gpt-4", temperature=0.7)
+        llm = ChatOpenAI()
         tools = [pdf_retriever_tool, tavily_search_tool]
         agent_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", "You are a helpful assistant"),
+                ("system", "Generate a comprehensive and informative answer for a given question solely based on the provided web Search Results (URL and Summary). You must only use information from the provided search results. Use an unbiased and journalistic tone. Use this current date and time: Wednesday, December 07, 2022 22:50:56 UTC Combine search results together into a coherent answer. Do not repeat text. If different results refer to different entities with the same name, write separate answers for each entity."),
                 MessagesPlaceholder("chat_history", optional=True),
                 ("human", "{input}"),
                 MessagesPlaceholder("agent_scratchpad"),
@@ -304,7 +303,7 @@ def document_search_retrieval_page():
         
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you live to choose',('gpt-4', 'gpt-3.5-turbo-1106'))
+            chat_model = st.selectbox('What model would you like to choose',('gpt-4-0125-preview', 'gpt-3.5-turbo-0125'))
             llm.model_name = chat_model
 
         chat_container = st.container()
@@ -358,7 +357,7 @@ def vetting_assistant_page():
     app_name = st.text_input("Enter the name of the app:")
 
     if "retriever" in st.session_state:
-        llm = ChatOpenAI(temperature=0.3, model="gpt-3.5-turbo-1106")
+        llm = ChatOpenAI()
         tools = [
             Tool(
                 name="vetting_tool",
@@ -392,7 +391,7 @@ def vetting_assistant_page():
         
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you live to choose',('gpt-4', 'gpt-3.5-turbo-1106'))
+            chat_model = st.selectbox('What model would you live to choose',('gpt-4-0125-preview', 'gpt-3.5-turbo-0125'))
             llm.model_name = chat_model
 
         st.write("Ask any question related to the vetting process:")
