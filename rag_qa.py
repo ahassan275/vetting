@@ -59,13 +59,13 @@ st.markdown(hide_streamlit_footer, unsafe_allow_html=True)
 
 
 # Set your OpenAI API key here
-openai.api_key = os.environ["OPENAI_API_KEY"]
+# openai.api_key = os.environ["OPENAI_API_KEY"]
 # Set OpenAI API key
-# GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-# OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-# GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
-GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
+# GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+# GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
 
 # # Prompt for the API key
 # api_key = getpass.getpass("Enter your Tavily API Key: ")
@@ -76,10 +76,10 @@ GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
 # # Now you can use the environment variable in your application
 # print("API Key set successfully!")
 
-# api_key = st.secrets["TAVILY_API_KEY"]
+api_key = st.secrets["TAVILY_API_KEY"]
 
-# # Setting the environment variable
-# os.environ["TAVILY_API_KEY"] = api_key
+# Setting the environment variable
+os.environ["TAVILY_API_KEY"] = api_key
 
 
 
