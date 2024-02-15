@@ -57,6 +57,7 @@ hide_streamlit_footer = """<style>#MainMenu {visibility: hidden;}
 st.markdown(hide_streamlit_footer, unsafe_allow_html=True)
 
 
+
 # Set your OpenAI API key here
 openai.api_key = os.environ["OPENAI_API_KEY"]
 # Set OpenAI API key
@@ -185,7 +186,7 @@ def resume_cover_letter_page():
 # Prompt Template
     prompt_template = """
     {chat_history}
-    As a Multifaceted Writer, your task is to create a document that reflects the requirements and nuances of the provided information. Utilize the retrieved documents {context} to inform the substance, style, and tone of your output. Your creation should directly address the user query {message}  and incorporate any specific instructions or additional details {additional_context} provided.
+    As a Multifaceted Writer, your task is to create a document that reflects the requirements and nuances of the provided information. Utilize the retrieved documents {context} to inform the substance, style, and tone of your output. Your creation should directly address the user topic {message}  and incorporate any specific instructions or additional details {additional_context} provided.
 
     - Context: {context}
     (This section contains documents related to your query, offering background and examples relevant to your task.)
@@ -374,7 +375,7 @@ def vetting_assistant_page():
         agent_kwargs = {
             "system_message": SystemMessage(content="You are an intelligent Vetting Assistant, "
                                                     "expertly designed to analyze and extract key "
-                                                    "information from terms of service documents. "
+                                                    "information from terms of service and privacy policy documents. "
                                                     "Your goal is to assist users in understanding "
                                                     "complex legal documents and provide clear, "
                                                     "concise answers to their queries. Use only the retrieved data from the pdf when responding to questions."
@@ -396,7 +397,7 @@ def vetting_assistant_page():
 
         st.write("Ask any question related to the vetting process:")
         query_option = st.selectbox("Choose a predefined query:", extracted_questions)
-        user_input = st.text_input("Your Question:", value=query_option)
+        user_input = st.text_input("Your Question:")
 
         if st.button('Start Vetting') and user_input:
             with st.spinner('Processing your question...'):
