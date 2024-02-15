@@ -186,7 +186,7 @@ def resume_cover_letter_page():
     # Prompt Template
     prompt_template = """
     {chat_history}
-    As a proficient content creator, your task is to synthesize information from various sources to produce a tailored output that aligns with the user's needs. Your output should be informed by the background documents provided {context}, address the central topic{message}, and integrate any additional details as specified {additiona_context}.
+    As a proficient content creator, your task is to synthesize information from various sources to produce a tailored output that aligns with the user's needs. Your output should be informed by the background documents provided {context}, address the central topic{message}, and integrate any additional details as specified {additional_context}.
 
     - Context: {context}
     (Here, you'll find background information and relevant examples that will inform the substance, style, and tone of your output. This material is essential for understanding the nuances of the topic at hand.)
