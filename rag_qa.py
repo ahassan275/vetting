@@ -183,22 +183,43 @@ def handle_uploaded_file(uploaded_files):
 
 def resume_cover_letter_page():
     # st.subheader("Document Generator")
-# Prompt Template
+    # Prompt Template
     prompt_template = """
     {chat_history}
-    As a Multifaceted Writer, your task is to create a document that reflects the requirements and nuances of the provided information. Utilize the retrieved documents {context} to inform the substance, style, and tone of your output. Your creation should directly address the user topic {message}  and incorporate any specific instructions or additional details {additional_context} provided.
+    As a proficient content creator, your task is to synthesize information from various sources to produce a tailored output that aligns with the user's needs. Your output should be informed by the background documents provided {context}, address the central topic{message}, and integrate any additional details as specified {additiona_context}.
 
     - Context: {context}
-    (This section contains documents related to your query, offering background and examples relevant to your task.)
+    (Here, you'll find background information and relevant examples that will inform the substance, style, and tone of your output. This material is essential for understanding the nuances of the topic at hand.)
 
     - Message: {message}
-    (Your query or the main topic around which the document should be centered.)
+    (This is the core topic or task that your output must address. It defines the primary focus of your content and sets the direction for your synthesis.)
 
     - Additional Context: {additional_context}
-    (Any specific instructions, details, or extra information that should be considered in the document creation process.)
+    (Additional details and instructions will be provided here to complement the main context. These should be woven into your output to ensure a comprehensive and nuanced response to the task outlined in the message.)
 
-    Based on these inputs, your goal is to synthesize the information and generate a document that is both informative and tailored to the specific requirements of the task. Ensure that your output is aligned with the themes and specifics mentioned in the context and message, while also adhering to any guidelines or directives provided in the additional context.
+    Your output should be crafted with the following considerations:
 
+    1. Relevance: Ensure all information is directly related to the topic and user requirements.
+    2. Clarity: Articulate your ideas clearly and concisely, avoiding ambiguity.
+    3. Structure: Organize your content logically, with a clear introduction, body, and conclusion.
+    4. Tone: Match the tone to the context and purpose of the task—whether it's formal, informal, persuasive, descriptive, etc.
+    5. Detail: Provide sufficient detail to convey a thorough understanding of the topic.
+
+    Please format your output as follows:
+
+    - If the task is informational or analytical, present your findings in a structured essay or report.
+    - If the task is creative, produce content in the form of a narrative, dialogue, or other creative formats.
+    - For instructional content, use a step-by-step format with actionable guidance.
+
+    Example:
+
+    If the task is to create an informative article on renewable energy sources:
+
+    Introduction: Begin with an overview of the importance of renewable energy in today's world.
+    Body: Discuss various renewable energy sources such as solar, wind, hydro, and geothermal power, including their benefits and challenges.
+    Conclusion: Summarize the potential impact of renewable energy on the environment and economy.
+
+    Remember to incorporate any specific examples or case studies provided in the context to enrich your output. If further clarification or additional information is required, use  'chain of thought' before providing an answer to ensure a more reliable and reasoned approach to solving the query
     """
     PROMPT = PromptTemplate(
         template=prompt_template, 
@@ -231,8 +252,8 @@ def resume_cover_letter_page():
         st.success("Document processed. Please enter additional context and custom instructions.")
 
         # Input fields for job description and custom instructions
-        message = st.text_area("Additional context", "Enter information here...")
-        additional_context = st.text_area("Custom instructions", "Enter any specific instructions or additional context here...")
+        message = st.text_area("Message", "Input specific instructions, tasks or directions expected within the generatated output")
+        additional_context = st.text_area("Custom instructions", "Enter any specific instructions. If providing ")
 
         input_container = st.container()
         with input_container:
@@ -246,7 +267,7 @@ def resume_cover_letter_page():
 
         if st.button("Generate Document"):
             with st.spinner('Generating your document...'):
-                docs = retriever.similarity_search(query=message, k=4, fetch_k=10)
+                docs = retriever.similarity_search(query=message, k=3, fetch_k=10)
                 inputs = [{"context": doc.page_content, "message": message, "additional_context": additional_context, "chat_history": memory} for doc in docs]
                 results = chain.apply(inputs)
                 text_results = []
