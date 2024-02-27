@@ -28,7 +28,7 @@ import os
 # from langchain_openai import ChatOpenAI
 # from langchain_openai import OpenAIEmbeddings
 from langchain.agents import AgentType, initialize_agent, Tool
-from vetting_questions import extracted_questions
+from vetting_questions import extracted_questions, modifier_terms, LineList, LineListOutputParser
 from langchain.schema import SystemMessage
 import base64
 from docx import Document
@@ -37,6 +37,9 @@ import requests
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
+from langchain.retrievers.multi_query import MultiQueryRetriever
+from typing import List
+
 
 # Streamlit UI setup for multi-page application
 # DESIGN implement changes to the standard streamlit UI/UX
@@ -70,7 +73,7 @@ GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
 # # Prompt for the API key
 # api_key = getpass.getpass("Enter your Tavily API Key: ")
 
-# # Set the environment variable
+# # # Set the environment variable
 # os.environ["TAVILY_API_KEY"] = api_key
 
 # # Now you can use the environment variable in your application
@@ -80,7 +83,6 @@ api_key = st.secrets["TAVILY_API_KEY"]
 
 # Setting the environment variable
 os.environ["TAVILY_API_KEY"] = api_key
-
 
 
 # Define functions for document processing
@@ -130,6 +132,7 @@ def google_search(query):
     except Exception as e:
         st.error(f"Error during web search: {e}")
         return []
+
 
 
 import tempfile
@@ -185,46 +188,36 @@ def resume_cover_letter_page():
     # st.subheader("Document Generator")
     # Prompt Template
     prompt_template = """
-    {chat_history}
-    As a proficient content creator, your task is to synthesize information from various sources to produce a tailored output that aligns with the user's needs. Your output should be informed by the background documents provided {context}, address the central topic{message}, and integrate any additional details as specified {additional_context}.
-
-    - Context: {context}
-    (Here, you'll find background information and relevant examples that will inform the substance, style, and tone of your output. This material is essential for understanding the nuances of the topic at hand.)
-
-    - Message: {message}
-    (This is the core topic or task that your output must address. It defines the primary focus of your content and sets the direction for your synthesis.)
-
-    - Additional Context: {additional_context}
-    (Additional details and instructions will be provided here to complement the main context. These should be woven into your output to ensure a comprehensive and nuanced response to the task outlined in the message.)
-
-    Your output should be crafted with the following considerations:
-
-    1. Relevance: Ensure all information is directly related to the topic and user requirements.
-    2. Clarity: Articulate your ideas clearly and concisely, avoiding ambiguity.
-    3. Structure: Organize your content logically, with a clear introduction, body, and conclusion.
-    4. Tone: Match the tone to the context and purpose of the task—whether it's formal, informal, persuasive, descriptive, etc.
-    5. Detail: Provide sufficient detail to convey a thorough understanding of the topic.
-
-    Please format your output as follows:
+    
+    A your task is to produce {output}. Ensure the {output} is {modifier} and informed by the background documents provided {context}, address the central topic{message}, and integrate any additional details as specified {additional_context}.
+    
+    Please format the {output} as follows:
 
     - If the task is informational or analytical, present your findings in a structured essay or report.
     - If the task is creative, produce content in the form of a narrative, dialogue, or other creative formats.
-    - For instructional content, use a step-by-step format with actionable guidance.
+    - If the task is instructional, use a step-by-step format with actionable guidance.
 
-    Example:
-
-    If the task is to create an informative article on renewable energy sources:
-
-    Introduction: Begin with an overview of the importance of renewable energy in today's world.
-    Body: Discuss various renewable energy sources such as solar, wind, hydro, and geothermal power, including their benefits and challenges.
-    Conclusion: Summarize the potential impact of renewable energy on the environment and economy.
-
-    Remember to incorporate any specific examples or case studies provided in the context to enrich your output. If further clarification or additional information is required, use  'chain of thought' before providing an answer to ensure a more reliable and reasoned approach to solving the query
     """
     PROMPT = PromptTemplate(
         template=prompt_template, 
-        input_variables=["chat_history","context", "message", "additional_context"]
+        input_variables=["chat_history","context", "message", "additional_context", "output"]
     )
+
+    llm = ChatOpenAI()
+    
+    output_parser = LineListOutputParser()
+
+    QUERY_PROMPT = PromptTemplate(
+    input_variables=["question"],
+    template="""You are an AI language model assistant. Your task is to generate five 
+    different versions of the given user question to retrieve relevant documents from a vector 
+    database. By generating multiple perspectives on the user question, your goal is to help
+    the user overcome some of the limitations of the distance-based similarity search. 
+    Provide these alternative questions separated by newlines.
+    Original question: {question}""")
+    llm_chain = LLMChain(llm=llm, prompt=QUERY_PROMPT, output_parser=output_parser)
+
+    question = "What are the approaches to Task Decomposition?"
 
     # Class for Prompt Input
     class PromptInput(BaseModel):
@@ -233,16 +226,14 @@ def resume_cover_letter_page():
         additional_context: str
         chat_history: str
 
-    memory = ConversationBufferMemory(memory_key="chat_history")
+    # memory = ConversationBufferMemory(memory_key="chat_history")
 
     # Initialize the LLM and LLMChain 
-    llm = ChatOpenAI()
-    chain = LLMChain(llm=llm, prompt=PROMPT, verbose=True, memory=memory)
+    
+    chain = LLMChain(llm=llm, prompt=PROMPT, verbose=True)
 
     # Streamlit UI setup
     st.subheader("VectorDB Document Generator")
-
-    
 
     # Upload PDF and process it
     uploaded_file = st.file_uploader("Upload Documents (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"], accept_multiple_files=True)
@@ -252,34 +243,60 @@ def resume_cover_letter_page():
         st.success("Document processed. Please enter additional context and custom instructions.")
 
         # Input fields for job description and custom instructions
-        message = st.text_area("Message", "Input specific instructions, tasks or directions expected within the generatated output")
-        additional_context = st.text_area("Custom instructions", "Enter any specific instructions. If providing ")
+        with st.expander("Information Input Section", expanded=True):
+            message = st.text_area("Message", "Input specific instructions, tasks or directions expected within the generatated output")
+            additional_context = st.text_area("Custom instructions", "Enter any specific instructions. If providing ")
+            output = st.text_input("Output Type", "Enter expected output e.g. blog post, website content, infographic ")
+            modifier = st.selectbox("Choose a predefined query:", modifier_terms)
 
-        input_container = st.container()
-        with input_container:
-            temperature = st.slider("Adjust chatbot specificity:", min_value=0.0, max_value=1.0, value=0.5, step=0.05)
-            llm.temperature = temperature
         
-        input_container = st.container()
-        with input_container:
-            chat_model = st.selectbox('What model would you live to choose',('gpt-4-0125-preview', 'gpt-3.5-turbo-0125'))
-            llm.model_name = chat_model
+            input_container = st.container()
+            with input_container:
+                temperature = st.slider("Adjust chatbot specificity:", min_value=0.0, max_value=1.0, value=0.5, step=0.05)
+                llm.temperature = temperature
+            
+            input_container = st.container()
+            with input_container:
+                chat_model = st.selectbox('What model would you live to choose',('gpt-3.5-turbo-0125'))
+                llm.model_name = chat_model
+            
+            # col1, col2, col3 = st.columns([5, 5, 5])
+            
+            # with col1:
+            #     num_to_retrieve = st.selectbox('how many documents to retrieve',('5', '10','15','20'))
+            
+            # with col2:
+            #     st.write("\n")  # add spacing
 
-        if st.button("Generate Document"):
-            with st.spinner('Generating your document...'):
-                docs = retriever.similarity_search(query=message, k=2, fetch_k=7)
-                inputs = [{"context": doc.page_content, "message": message, "additional_context": additional_context, "chat_history": memory} for doc in docs]
-                results = chain.apply(inputs)
-                text_results = []
-                for d in results:
-                    text = d["text"]
-                    formatted_text = f"{text}"
-                    if formatted_text not in text_results:
-                        text_results.append(formatted_text)
+            # with col3:
+            #     doc_to_generate = st.selectbox('how many documents to generate',('','3', '4','5','7'))
+            
+            # input_container = st.container()
+            # with input_container:
+            #     num_to_retrieve = st.selectbox('how many documents to retrieve',('5', '10','15','20'))
 
-                st.write("Generated Document", " ".join(text_results))
-    else:
-        st.write("Please upload a Document to start.")
+            # input_container = st.container()
+            # with input_container:
+            #     doc_to_generate = st.selectbox('how many documents to generate',('','3', '4','5','7'))
+
+            if st.button("Generate Document"):
+                with st.spinner('Generating your document...'):
+                    # retriever_from_llm = MultiQueryRetriever.from_llm(retriever=retriever.as_retriever(), llm=llm)
+                    retriever_from_llm = MultiQueryRetriever(retriever=retriever.as_retriever(), llm_chain=llm_chain, parser_key="lines")
+                    docs = retriever_from_llm.get_relevant_documents(query=message)
+                    # docs = retriever.similarity_search(query=message, k=1)
+                    inputs = [{"context": doc.page_content, "message": message, "additional_context": additional_context, "output": output, "modifier": modifier} for doc in docs]
+                    results = chain.apply(inputs)
+                    text_results = []
+                    for d in results:
+                        text = d["text"]
+                        formatted_text = f"{text}"
+                        if formatted_text not in text_results:
+                            text_results.append(formatted_text)
+
+                    st.write("Generated Document", " ".join(text_results))
+            else:
+                st.write("Please upload a Document to start.")
 
 
 def document_search_retrieval_page():
@@ -309,7 +326,7 @@ def document_search_retrieval_page():
         tools = [pdf_retriever_tool, tavily_search_tool]
         agent_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", "Generate a comprehensive and informative answer for a given question solely based on the provided web Search Results (URL and Summary). You must only use information from the provided search results. Use an unbiased and journalistic tone. Use this current date and time: Wednesday, December 07, 2022 22:50:56 UTC Combine search results together into a coherent answer. Do not repeat text. If different results refer to different entities with the same name, write separate answers for each entity."),
+                ("system", "You are an intelligent Assistant that offers clear and concise answers to queries. You need to be very thorough. If you aren't able to find information in a first search, then search again and click on more pages. Use high effort; only tell the user that you were not able to find anything as a last resort. Always be thorough enough to find exactly what the user is looking for. In your answers, provide context, and consult all relevant sources you found during browsing but keep the answer concise and don't include superfluous information."),
                 MessagesPlaceholder("chat_history", optional=True),
                 ("human", "{input}"),
                 MessagesPlaceholder("agent_scratchpad"),
@@ -325,7 +342,7 @@ def document_search_retrieval_page():
         
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you like to choose',('gpt-4-0125-preview', 'gpt-3.5-turbo-0125'))
+            chat_model = st.selectbox('What model would you like to choose',('gpt-3.5-turbo-0125'))
             llm.model_name = chat_model
 
         chat_container = st.container()
@@ -413,7 +430,7 @@ def vetting_assistant_page():
         
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you live to choose',('gpt-4-0125-preview', 'gpt-3.5-turbo-0125'))
+            chat_model = st.selectbox('What model would you live to choose',('gpt-3.5-turbo-0125'))
             llm.model_name = chat_model
 
         st.write("Ask any question related to the vetting process:")
