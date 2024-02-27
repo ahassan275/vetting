@@ -62,7 +62,7 @@ st.markdown(hide_streamlit_footer, unsafe_allow_html=True)
 
 
 # Set your OpenAI API key here
-# openai.api_key = os.environ["OPENAI_API_KEY"]
+openai.api_key = os.environ["OPENAI_API_KEY"]
 # Set OpenAI API key
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
@@ -203,7 +203,7 @@ def resume_cover_letter_page():
         input_variables=["chat_history","context", "message", "additional_context", "output"]
     )
 
-    llm = ChatOpenAI()
+    llm = ChatOpenAI(model='gpt-3.5-turbo-0125')
     
     output_parser = LineListOutputParser()
 
@@ -257,7 +257,7 @@ def resume_cover_letter_page():
             
             input_container = st.container()
             with input_container:
-                chat_model = st.selectbox('What model would you live to choose',('gpt-3.5-turbo-0125'))
+                chat_model = st.selectbox('What model would you live to choose','gpt-3.5-turbo-0125')
                 llm.model_name = chat_model
             
             # col1, col2, col3 = st.columns([5, 5, 5])
@@ -322,7 +322,7 @@ def document_search_retrieval_page():
         memory = ConversationBufferMemory()
 
         tavily_search_tool = TavilySearchResults()
-        llm = ChatOpenAI()
+        llm = ChatOpenAI(model='gpt-3.5-turbo-0125')
         tools = [pdf_retriever_tool, tavily_search_tool]
         agent_prompt = ChatPromptTemplate.from_messages(
             [
@@ -341,9 +341,9 @@ def document_search_retrieval_page():
             llm.temperature = temperature
         
         input_container = st.container()
-        with input_container:
-            chat_model = st.selectbox('What model would you like to choose',('gpt-3.5-turbo-0125'))
-            llm.model_name = chat_model
+        # with input_container:
+        #     chat_model = st.selectbox('What model would you like to choose','gpt-3.5-turbo-0125')
+        #     llm.model_name = chat_model
 
         chat_container = st.container()
         with chat_container:
@@ -396,7 +396,7 @@ def vetting_assistant_page():
     app_name = st.text_input("Enter the name of the app:")
 
     if "retriever" in st.session_state:
-        llm = ChatOpenAI()
+        llm = ChatOpenAI(model='gpt-3.5-turbo-0125')
         tools = [
             Tool(
                 name="vetting_tool",
@@ -429,9 +429,9 @@ def vetting_assistant_page():
             llm.temperature = temperature
         
         input_container = st.container()
-        with input_container:
-            chat_model = st.selectbox('What model would you live to choose',('gpt-3.5-turbo-0125'))
-            llm.model_name = chat_model
+        # with input_container:
+        #     chat_model = st.selectbox('What model would you live to choose','gpt-3.5-turbo-0125')
+        #     llm.model_name = chat_model
 
         st.write("Ask any question related to the vetting process:")
         query_option = st.selectbox("Choose a predefined query:", extracted_questions)
