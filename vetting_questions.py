@@ -1,5 +1,8 @@
 from langchain.document_loaders.csv_loader import CSVLoader
 import re
+from langchain.output_parsers import PydanticOutputParser
+from pydantic import BaseModel, Field
+from typing import List
 
 
 # loader = CSVLoader(file_path="_Software Vetting Request and Resolution List - SW Vetting Template.csv")
@@ -41,3 +44,31 @@ extracted_questions= [
     "Does the App Provider directly inform Users before changes are made to policies and terms of use, etc., before data is used in a manner inconsistent with the terms they were initially provided?",
     "Does the App Provider confirm that they comply with all laws in their jurisdiction?"
 ]
+
+modifier_terms = [
+    "Extremely Brief",
+    "Minimalist",
+    "Brief",
+    "Concise",
+    "Compact",
+    "Focused",
+    "In-depth",
+    "Ultra-detailed",
+    "All-Encompassing",
+    "Encyclopedic",
+    "Unabridged and Expansive",
+    "Painstakingly Detailed"
+]
+
+class LineList(BaseModel):
+    # "lines" is the key (attribute name) of the parsed output
+    lines: List[str] = Field(description="Lines of text")
+
+
+class LineListOutputParser(PydanticOutputParser):
+    def __init__(self) -> None:
+        super().__init__(pydantic_object=LineList)
+
+    def parse(self, text: str) -> LineList:
+        lines = text.strip().split("\n")
+        return LineList(lines=lines)
