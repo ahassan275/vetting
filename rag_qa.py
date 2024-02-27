@@ -203,7 +203,7 @@ def resume_cover_letter_page():
         input_variables=["chat_history","context", "message", "additional_context", "output"]
     )
 
-    llm = ChatOpenAI("model=gpt-3.5-turbo-0125")
+    llm = ChatOpenAI(model="gpt-3.5-turbo-0125")
     
     output_parser = LineListOutputParser()
 
@@ -322,7 +322,7 @@ def document_search_retrieval_page():
         memory = ConversationBufferMemory()
 
         tavily_search_tool = TavilySearchResults()
-        llm = ChatOpenAI("model=gpt-3.5-turbo-0125")
+        llm = ChatOpenAI(model="gpt-3.5-turbo-0125")
         tools = [pdf_retriever_tool, tavily_search_tool]
         agent_prompt = ChatPromptTemplate.from_messages(
             [
@@ -396,7 +396,7 @@ def vetting_assistant_page():
     app_name = st.text_input("Enter the name of the app:")
 
     if "retriever" in st.session_state:
-        llm = ChatOpenAI("model=gpt-3.5-turbo-0125")
+        llm = ChatOpenAI(model="gpt-3.5-turbo-0125")
         tools = [
             Tool(
                 name="vetting_tool",
