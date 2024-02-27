@@ -7,6 +7,11 @@ from langchain_community.chat_models import ChatOpenAI
 from operator import itemgetter
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+from langchain.schema import format_document
+from langchain.memory import ConversationBufferMemory
+from langchain_core.messages import BaseMessage, get_buffer_string
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough
+from langchain_core.runnables import RunnableLambda
 
 
 # Initialize the RAG components
@@ -60,10 +65,10 @@ chain = (
 )
 
 # # Execute the chain with a given question
-result = chain.invoke({
-    "message": "What is dedoose's privacy policy?", 
-    "custom_instructions": "Provide concise information citing relevant sources."
-})
+# result = chain.invoke({
+#     "message": "What is dedoose's privacy policy?", 
+#     "custom_instructions": "Provide concise information citing relevant sources."
+# })
 
 # # Load, split, embed, and index the document to create a retriever tool
 # docs = load_documents("TERMS OF SERVICE.pdf")
@@ -115,50 +120,50 @@ result = chain.invoke({
 # Output the result
 # print("Generated Answer:", result)
 
-# _template = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question, in its original language.
+_template = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question, in its original language.
 
 # Chat History:
 # {chat_history}
 # Follow Up Input: {question}
 # Standalone question:"""
-# CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template(_template)
+CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template(_template)
 
-# template = """Answer the question based only on the following context:
-# {context}
+template = """Answer the question based only on the following context:
+{context}
 
-# Question: {question}
-# """
-# ANSWER_PROMPT = ChatPromptTemplate.from_template(template)
+Question: {question}
+"""
+ANSWER_PROMPT = ChatPromptTemplate.from_template(template)
 
-# DEFAULT_DOCUMENT_PROMPT = PromptTemplate.from_template(template="{page_content}")
+DEFAULT_DOCUMENT_PROMPT = PromptTemplate.from_template(template="{page_content}")
 
 
-# def _combine_documents(
-#     docs, document_prompt=DEFAULT_DOCUMENT_PROMPT, document_separator="\n\n"
-# ):
-#     doc_strings = [format_document(doc, document_prompt) for doc in docs]
-#     return document_separator.join(doc_strings)
+def _combine_documents(
+    docs, document_prompt=DEFAULT_DOCUMENT_PROMPT, document_separator="\n\n"
+):
+    doc_strings = [format_document(doc, document_prompt) for doc in docs]
+    return document_separator.join(doc_strings)
 
-# _inputs = RunnableParallel(
-#     standalone_question=RunnablePassthrough.assign(
-#         chat_history=lambda x: get_buffer_string(x["chat_history"])
-#     )
-#     | CONDENSE_QUESTION_PROMPT
-#     | ChatOpenAI(temperature=0)
-#     | StrOutputParser(),
-# )
-# _context = {
-#     "context": itemgetter("standalone_question") | retriever | _combine_documents,
-#     "question": lambda x: x["standalone_question"],
-# }
-# conversational_qa_chain = _inputs | _context | ANSWER_PROMPT | ChatOpenAI()
+_inputs = RunnableParallel(
+    standalone_question=RunnablePassthrough.assign(
+        chat_history=lambda x: get_buffer_string(x["chat_history"])
+    )
+    | CONDENSE_QUESTION_PROMPT
+    | ChatOpenAI(temperature=0)
+    | StrOutputParser(),
+)
+_context = {
+    "context": itemgetter("standalone_question") | retriever | _combine_documents,
+    "question": lambda x: x["standalone_question"],
+}
+conversational_qa_chain = _inputs | _context | ANSWER_PROMPT | ChatOpenAI()
 
-# result_2 = conversational_qa_chain.invoke(
-#     {
-#         "question": "How does dedoose store user data?",
-#         "chat_history": [],
-#     }
-# )
+result_2 = conversational_qa_chain.invoke(
+    {
+        "question": "How does dedoose store user data?",
+        "chat_history": [],
+    }
+)
 
 # result_3 = conversational_qa_chain.invoke(
 #     {
@@ -169,62 +174,60 @@ result = chain.invoke({
 #         ],
 #     }
 # )
-# print(result_2)
+print(result_2)
 # print(result_3)
 
-# memory = ConversationBufferMemory(
-#     return_messages=True, output_key="answer", input_key="question"
-# )
+memory = ConversationBufferMemory(
+    return_messages=True, output_key="answer", input_key="question"
+)
 
 # First we add a step to load memory
 # This adds a "memory" key to the input object
-# loaded_memory = RunnablePassthrough.assign(
-#     chat_history=RunnableLambda(memory.load_memory_variables) | itemgetter("history"),
-# )
+loaded_memory = RunnablePassthrough.assign(
+    chat_history=RunnableLambda(memory.load_memory_variables) | itemgetter("history"),
+)
 # # Now we calculate the standalone question
-# standalone_question = {
-#     "standalone_question": {
-#         "question": lambda x: x["question"],
-#         "chat_history": lambda x: get_buffer_string(x["chat_history"]),
-#     }
-#     | CONDENSE_QUESTION_PROMPT
-#     | ChatOpenAI(temperature=0)
-#     | StrOutputParser(),
-# }
+standalone_question = {
+    "standalone_question": {
+        "question": lambda x: x["question"],
+        "chat_history": lambda x: get_buffer_string(x["chat_history"]),
+    }
+    | CONDENSE_QUESTION_PROMPT
+    | ChatOpenAI(temperature=0)
+    | StrOutputParser(),
+}
 # # Now we retrieve the documents
-# retrieved_documents = {
-#     "docs": itemgetter("standalone_question") | retriever,
-#     "question": lambda x: x["standalone_question"],
-# }
+retrieved_documents = {
+    "docs": itemgetter("standalone_question") | retriever,
+    "question": lambda x: x["standalone_question"],
+}
 # # Now we construct the inputs for the final prompt
-# final_inputs = {
-#     "context": lambda x: _combine_documents(x["docs"]),
-#     "question": itemgetter("question"),
-# }
+final_inputs = {
+    "context": lambda x: _combine_documents(x["docs"]),
+    "question": itemgetter("question"),
+}
 # # And finally, we do the part that returns the answers
-# answer = {
-#     "answer": final_inputs | ANSWER_PROMPT | ChatOpenAI(),
-#     "docs": itemgetter("docs"),
-# }
+answer = {
+    "answer": final_inputs | ANSWER_PROMPT | ChatOpenAI(),
+    "docs": itemgetter("docs"),
+}
 # # And now we put it all together!
-# final_chain = loaded_memory | standalone_question | retrieved_documents | answer
+final_chain = loaded_memory | standalone_question | retrieved_documents | answer
 
-# inputs = {"question": "where does dedoose store user data?"}
-# result_4 = final_chain.invoke(inputs)
-# print(result_4)
+inputs = {"question": "where does dedoose store user data?"}
+result_4 = final_chain.invoke(inputs)
+print(result_4)
 
 # # Note that the memory does not save automatically
 # # This will be improved in the future
 # # For now you need to save it yourself
-# memory.save_context(inputs, {"answer": result_4["answer"].content})
+memory.save_context(inputs, {"answer": result_4["answer"].content})
 
-# memory.load_memory_variables({})
+memory.load_memory_variables({})
 
-# inputs = {"question": "is there anywhere else they can store data?"}
-# result_5 = final_chain.invoke(inputs)
-# print(result_5)
-
-# from langchain_core.runnables import RunnableParallel, RunnablePassthrough
+inputs = {"question": "is there anywhere else they can store data?"}
+result_5 = final_chain.invoke(inputs)
+print(result_5)
 
 # # Existing functions from the previous script
 # # ...
