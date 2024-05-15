@@ -466,7 +466,7 @@ def vetting_assistant_page():
                     st.write(link)
 
 # Streamlit UI setup for multi-page application
-st.image('img/image2.png')
+st.image('img/image.png')
 st.title(":blue[Document Processing and Retrieval Application]")
 st.markdown('Generate engaging documents and chat over your files based on your direct quries - powered by Artificial Intelligence (OpenAI GPT-4 and GPT-3.5) Implemented by PCM')
         # '[stefanrmmr](https://www.linkedin.com/in/stefanrmmr/) - '
