@@ -2,35 +2,24 @@ import openai
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain import hub
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.prompts import PromptTemplate
-# from langchain_community.chat_models import ChatOpenAI
-from langchain.embeddings.openai import OpenAIEmbeddings
-# from langchain_openai import OpenAIEmbeddings
 from langchain.tools.retriever import create_retriever_tool
 from langchain.agents import AgentExecutor, create_openai_tools_agent
-# from langchain import hub
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain.schema import format_document
 from langchain.prompts.prompt import PromptTemplate
 import streamlit as st
 import tempfile
-import getpass
 import base64
 from langchain.chains import LLMChain
 from pydantic import BaseModel, Field
 from langchain_community.document_loaders import UnstructuredWordDocumentLoader
 from langchain_community.document_loaders import TextLoader
 from langchain.memory import ConversationBufferMemory
-import getpass
 import os
-# from langchain_openai import ChatOpenAI
-# from langchain_openai import OpenAIEmbeddings
 from langchain.agents import AgentType, initialize_agent, Tool
 from vetting_questions import extracted_questions, modifier_terms, LineList, LineListOutputParser
 from langchain.schema import SystemMessage
-import base64
 from docx import Document
 from langchain.chains import RetrievalQA
 import requests
@@ -38,11 +27,11 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 from langchain.retrievers.multi_query import MultiQueryRetriever
+from langchain_openai import OpenAIEmbeddings
 from typing import List
 
 
 # Streamlit UI setup for multi-page application
-# DESIGN implement changes to the standard streamlit UI/UX
 st.set_page_config(page_title="RAG Demonstration APP", layout="wide", initial_sidebar_state="expanded", page_icon="logo.png")
 
 
@@ -61,8 +50,7 @@ st.markdown(hide_streamlit_footer, unsafe_allow_html=True)
 
 
 
-# Set your OpenAI API key here
-openai.api_key = os.environ["OPENAI_API_KEY"]
+# openai.api_key = os.environ["OPENAI_API_KEY"]
 # Set OpenAI API key
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
@@ -81,8 +69,10 @@ GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
 
 api_key = st.secrets["TAVILY_API_KEY"]
 
-# Setting the environment variable
-os.environ["TAVILY_API_KEY"] = api_key
+# # Setting the environment variable
+# os.environ["TAVILY_API_KEY"] = api_key
+
+# os.environ["TAVILY_API_KEY"] = "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"
 
 
 # Define functions for document processing
@@ -111,7 +101,6 @@ def get_file_content_as_string(file_path):
         binary_file_data = f.read()
     return base64.b64encode(binary_file_data).decode('utf-8')
 
-# model: str = "text-embedding-ada-002"
 
 def create_download_link(file_path, file_name):
     file_content = get_file_content_as_string(file_path)
@@ -156,7 +145,7 @@ def process_document(file_paths):
         docs = splitter.split_documents(pages)
         all_docs.extend(docs)
     
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
     retriever = FAISS.from_documents(docs, embeddings)
     return retriever
 
@@ -185,17 +174,9 @@ def handle_uploaded_file(uploaded_files):
     return file_paths
 
 def resume_cover_letter_page():
-    # st.subheader("Document Generator")
-    # Prompt Template
     prompt_template = """
     
     A your task is to produce {output}. Ensure the {output} is {modifier} and informed by the background documents provided {context}, address the central topic{message}, and integrate any additional details as specified {additional_context}.
-    
-    Please format the {output} as follows:
-
-    - If the task is informational or analytical, present your findings in a structured essay or report.
-    - If the task is creative, produce content in the form of a narrative, dialogue, or other creative formats.
-    - If the task is instructional, use a step-by-step format with actionable guidance.
 
     """
     PROMPT = PromptTemplate(
@@ -203,7 +184,7 @@ def resume_cover_letter_page():
         input_variables=["chat_history","context", "message", "additional_context", "output"]
     )
 
-    llm = ChatOpenAI(model="gpt-3.5-turbo-0125")
+    llm = ChatOpenAI()
     
     output_parser = LineListOutputParser()
 
@@ -255,10 +236,10 @@ def resume_cover_letter_page():
                 temperature = st.slider("Adjust chatbot specificity:", min_value=0.0, max_value=1.0, value=0.5, step=0.05)
                 llm.temperature = temperature
             
-            # input_container = st.container()
-            # with input_container:
-            #     chat_model = st.selectbox('What model would you live to choose',('gpt-3.5-turbo-0125'))
-            #     llm.model_name = chat_model
+            input_container = st.container()
+            with input_container:
+                chat_model = st.selectbox('What model would you live to choose',('gpt-3.5-turbo-0125','gpt-4-0125-preview','gpt-4o'))
+                llm.model_name = chat_model
             
             # col1, col2, col3 = st.columns([5, 5, 5])
             
@@ -322,11 +303,11 @@ def document_search_retrieval_page():
         memory = ConversationBufferMemory()
 
         tavily_search_tool = TavilySearchResults()
-        llm = ChatOpenAI(model="gpt-3.5-turbo-0125")
+        llm = ChatOpenAI()
         tools = [pdf_retriever_tool, tavily_search_tool]
         agent_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", "You are an intelligent Assistant that offers clear and concise answers to queries. You need to be very thorough. If you aren't able to find information in a first search, then search again and click on more pages. Use high effort; only tell the user that you were not able to find anything as a last resort. Always be thorough enough to find exactly what the user is looking for. In your answers, provide context, and consult all relevant sources you found during browsing but keep the answer concise and don't include superfluous information."),
+                ("system", "You are an intelligent Assistant that offers clear and concise answers to queries. You need to be very thorough. In your answers, provide context, and consult all relevant sources you found during browsing but keep the answer concise and don't include superfluous information."),
                 MessagesPlaceholder("chat_history", optional=True),
                 ("human", "{input}"),
                 MessagesPlaceholder("agent_scratchpad"),
@@ -341,9 +322,9 @@ def document_search_retrieval_page():
             llm.temperature = temperature
         
         input_container = st.container()
-        # with input_container:
-        #     chat_model = st.selectbox('What model would you like to choose',('gpt-3.5-turbo-0125'))
-        #     llm.model_name = chat_model
+        with input_container:
+            chat_model = st.selectbox('What model would you like to choose',('gpt-3.5-turbo-0125','gpt-4-0125-preview','gpt-4o'))
+            llm.model_name = chat_model
 
         chat_container = st.container()
         with chat_container:
@@ -396,7 +377,7 @@ def vetting_assistant_page():
     app_name = st.text_input("Enter the name of the app:")
 
     if "retriever" in st.session_state:
-        llm = ChatOpenAI(model="gpt-3.5-turbo-0125")
+        llm = ChatOpenAI()
         tools = [
             Tool(
                 name="vetting_tool",
@@ -429,9 +410,9 @@ def vetting_assistant_page():
             llm.temperature = temperature
         
         input_container = st.container()
-        # with input_container:
-        #     chat_model = st.selectbox('What model would you like to choose',('gpt-3.5-turbo-0125'))
-        #     llm.model_name = chat_model
+        with input_container:
+            chat_model = st.selectbox('What model would you like to choose',('gpt-3.5-turbo-0125','gpt-4-0125-preview','gpt-4o'))
+            llm.model_name = chat_model
 
         st.write("Ask any question related to the vetting process:")
         query_option = st.selectbox("Choose a predefined query:", extracted_questions)
@@ -487,7 +468,7 @@ def vetting_assistant_page():
                     st.write(link)
 
 # Streamlit UI setup for multi-page application
-st.image('img/image.png')
+st.image('img/image2.png')
 st.title(":blue[Document Processing and Retrieval Application]")
 st.markdown('Generate engaging documents and chat over your files based on your direct quries - powered by Artificial Intelligence (OpenAI GPT-4 and GPT-3.5) Implemented by PCM')
         # '[stefanrmmr](https://www.linkedin.com/in/stefanrmmr/) - '
