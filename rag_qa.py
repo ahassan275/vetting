@@ -261,9 +261,9 @@ def resume_cover_letter_page():
             if st.button("Generate Document"):
                 with st.spinner('Generating your document...'):
                     # retriever_from_llm = MultiQueryRetriever.from_llm(retriever=retriever.as_retriever(), llm=llm)
-                    retriever_from_llm = MultiQueryRetriever(retriever=retriever.as_retriever(), llm_chain=llm_chain, parser_key="lines")
-                    docs = retriever_from_llm.get_relevant_documents(query=message)
-                    # docs = retriever.similarity_search(query=message, k=1)
+                    # retriever_from_llm = MultiQueryRetriever(retriever=retriever.as_retriever(), llm_chain=llm_chain, parser_key="lines")
+                    # docs = retriever_from_llm.get_relevant_documents(query=message)
+                    docs = retriever.similarity_search(query=message, k=4)
                     inputs = [{"context": doc.page_content, "message": message, "additional_context": additional_context, "output": output, "modifier": modifier} for doc in docs]
                     results = chain.apply(inputs)
                     text_results = []
