@@ -55,7 +55,6 @@ modifier_terms = [
     "In-depth",
     "Ultra-detailed",
     "All-Encompassing",
-    "Encyclopedic",
     "Unabridged and Expansive",
     "Painstakingly Detailed"
 ]
