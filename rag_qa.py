@@ -70,7 +70,7 @@ GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
 api_key = st.secrets["TAVILY_API_KEY"]
 
 # # Setting the environment variable
-os.environ["TAVILY_API_KEY"] = api_key
+# os.environ["TAVILY_API_KEY"] = api_key
 
 
 # Define functions for document processing
