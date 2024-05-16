@@ -236,7 +236,7 @@ def resume_cover_letter_page():
             
             input_container = st.container()
             with input_container:
-                chat_model = st.selectbox('What model would you live to choose',('gpt-3.5-turbo-0125','gpt-4-0125-preview','gpt-4o'))
+                chat_model = st.selectbox('What model would you live to choose',('gpt-3.5-turbo-0125','gpt-4o'))
                 llm.model_name = chat_model
             
             # col1, col2, col3 = st.columns([5, 5, 5])
@@ -321,7 +321,7 @@ def document_search_retrieval_page():
         
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you like to choose',('gpt-3.5-turbo-0125','gpt-4-0125-preview','gpt-4o'))
+            chat_model = st.selectbox('What model would you like to choose',('gpt-3.5-turbo-0125','gpt-4o'))
             llm.model_name = chat_model
 
         chat_container = st.container()
@@ -409,7 +409,7 @@ def vetting_assistant_page():
         
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you like to choose',('gpt-3.5-turbo-0125','gpt-4-0125-preview','gpt-4o'))
+            chat_model = st.selectbox('What model would you like to choose',('gpt-3.5-turbo-0125','gpt-4o'))
             llm.model_name = chat_model
 
         st.write("Ask any question related to the vetting process:")
