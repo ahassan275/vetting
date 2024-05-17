@@ -17,3 +17,4 @@ langchain-openai
 langchain-core
 langsmith
 pandasai
+openpyxl

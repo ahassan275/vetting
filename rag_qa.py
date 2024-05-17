@@ -39,6 +39,7 @@ from pandasai import SmartDataframe
 from pandasai.llm import OpenAI
 
 
+
 # Streamlit UI setup for multi-page application
 st.set_page_config(page_title="RAG Demonstration APP", layout="wide", initial_sidebar_state="expanded", page_icon="logo.png")
 
@@ -540,7 +541,6 @@ def document_search_retrieval_page():
         st.subheader("Ask Questions About Your CSV/Excel Data")
 
     csv_file = st.file_uploader("Upload CSV/Excel File", type=["csv", "xlsx"])
-    
     if csv_file:
         df = None
         try:
@@ -553,17 +553,14 @@ def document_search_retrieval_page():
 
         if df is not None:
             st.write("Data Preview:", df.head())
-
-            # Integrate OpenAI LLM with PandasAI
-            PANDASAI_API_KEY = st.secrets["PANDASAI_API_KEY"]
-            llm = OpenAI(api_token=os.getenv("OPENAI_API_KEY"))  # Uses the API key from environment variable
-            pandas_ai = SmartDataframe(df, config={"llm": llm})
-
             query = st.text_input("Ask a question about the data:")
             if st.button('Query Data') and query:
                 with st.spinner('Processing your query...'):
                     try:
-                        response = pandas_ai.chat(query)
+                        # Instantiate OpenAI LLM
+                        llm = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+                        sdf = SmartDataframe(df, llm=llm)
+                        response = sdf.chat(query)
                         st.write(f"Answer: {response}")
                     except Exception as e:
                         st.error(f"An error occurred: {e}")
