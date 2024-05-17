@@ -558,8 +558,8 @@ def document_search_retrieval_page():
                 with st.spinner('Processing your query...'):
                     try:
                         # Instantiate OpenAI LLM
-                        llm = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-                        sdf = SmartDataframe(df, llm=llm)
+                        llm = OpenAI(api_token=os.environ["OPENAI_API_KEY"])
+                        sdf = SmartDataframe(df, config={"llm": llm})
                         response = sdf.chat(query)
                         st.write(f"Answer: {response}")
                     except Exception as e:
