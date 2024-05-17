@@ -36,6 +36,7 @@ from langchain_community.document_loaders import YoutubeLoader
 import pandas as pd
 from pandasai import Agent
 from pandasai import SmartDataframe
+from pandasai.llm import OpenAI
 
 
 # Streamlit UI setup for multi-page application
@@ -536,9 +537,10 @@ def document_search_retrieval_page():
             except Exception as e:
                 st.error(f"An error occurred: {e}")
     
-    st.subheader("Ask Questions About Your CSV/Excel Data")
+        st.subheader("Ask Questions About Your CSV/Excel Data")
 
     csv_file = st.file_uploader("Upload CSV/Excel File", type=["csv", "xlsx"])
+    
     if csv_file:
         df = None
         try:
@@ -551,15 +553,22 @@ def document_search_retrieval_page():
 
         if df is not None:
             st.write("Data Preview:", df.head())
+
+            # Integrate OpenAI LLM with PandasAI
+            llm = OpenAI(api_token=os.getenv("OPENAI_API_KEY"))  # Uses the API key from environment variable
+            pandas_ai = SmartDataframe(df, config={"llm": llm})
+
             query = st.text_input("Ask a question about the data:")
             if st.button('Query Data') and query:
                 with st.spinner('Processing your query...'):
                     try:
-                        agent = Agent(df)
-                        response = agent.chat(query)
+                        response = pandas_ai.query(query)
                         st.write(f"Answer: {response}")
                     except Exception as e:
                         st.error(f"An error occurred: {e}")
+
+    else:
+        st.write("Please upload a CSV or Excel file to start.")
 
 
 
