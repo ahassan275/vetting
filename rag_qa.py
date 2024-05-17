@@ -556,13 +556,13 @@ def document_search_retrieval_page():
 
             # Integrate OpenAI LLM with PandasAI
             llm = OpenAI(api_token=os.getenv("OPENAI_API_KEY"))  # Uses the API key from environment variable
-            pandas_ai = SmartDataframe(df, config={"llm": llm})
+            pandas_ai = Agent(df, config={"llm": llm})
 
             query = st.text_input("Ask a question about the data:")
             if st.button('Query Data') and query:
                 with st.spinner('Processing your query...'):
                     try:
-                        response = pandas_ai.query(query)
+                        response = pandas_ai.chat(query)
                         st.write(f"Answer: {response}")
                     except Exception as e:
                         st.error(f"An error occurred: {e}")
