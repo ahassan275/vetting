@@ -555,8 +555,9 @@ def document_search_retrieval_page():
             st.write("Data Preview:", df.head())
 
             # Integrate OpenAI LLM with PandasAI
+            PANDASAI_API_KEY = st.secrets["PANDASAI_API_KEY"]
             llm = OpenAI(api_token=os.getenv("OPENAI_API_KEY"))  # Uses the API key from environment variable
-            pandas_ai = Agent(df, config={"llm": llm})
+            pandas_ai = SmartDataframe(df, config={"llm": llm})
 
             query = st.text_input("Ask a question about the data:")
             if st.button('Query Data') and query:
