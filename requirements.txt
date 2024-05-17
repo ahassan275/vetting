@@ -16,3 +16,4 @@ langchain-openai
 langchain-openai
 langchain-core
 langsmith
+pandasai
