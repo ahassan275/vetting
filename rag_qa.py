@@ -29,6 +29,13 @@ from langchain_openai import ChatOpenAI
 from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain_openai import OpenAIEmbeddings
 from typing import List
+from langchain.chains import LLMChain, RetrievalQA, MapReduceDocumentsChain, ReduceDocumentsChain, load_summarize_chain
+from langchain.chains.combine_documents.stuff import StuffDocumentsChain
+from langchain.text_splitter import TokenTextSplitter
+from langchain_community.document_loaders import YoutubeLoader
+import pandas as pd
+from pandasai import Agent
+from pandasai import SmartDataframe
 
 
 # Streamlit UI setup for multi-page application
@@ -50,13 +57,14 @@ st.markdown(hide_streamlit_footer, unsafe_allow_html=True)
 
 
 
-# openai.api_key = os.environ["OPENAI_API_KEY"]
+openai.api_key = os.environ["OPENAI_API_KEY"]
 # Set OpenAI API key
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
 # GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
 # GOOGLE_CSE_ID = os.environ["GOOGLE_CSE_ID"]
+PANDASAI_API_KEY = st.secrets["PANDASAI_API_KEY"]
 
 # # Prompt for the API key
 # api_key = getpass.getpass("Enter your Tavily API Key: ")
@@ -69,13 +77,45 @@ GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
 
 api_key = st.secrets["TAVILY_API_KEY"]
 
+
+
 # # Setting the environment variable
 # os.environ["TAVILY_API_KEY"] = api_key
 
 
 # Define functions for document processing
+# def load_documents(file_path):
+#     loader = PyPDFLoader(file_path)
+#     return loader.load()
+
+# def split_documents(docs, chunk_size=1000, chunk_overlap=200, add_start_index=True):
+#     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap, add_start_index=add_start_index)
+#     return text_splitter.split_documents(docs)
+
+# def embed_and_index(docs):
+#     embeddings = OpenAIEmbeddings()
+#     vectorstore = FAISS.from_documents(docs, embeddings)
+#     return vectorstore
+
+# def format_docs(docs):
+#     return "\n\n".join(doc.page_content for doc in docs)
+
+# def split_documents(docs, chunk_size=1000, chunk_overlap=200, add_start_index=True):
+#     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap, add_start_index=add_start_index)
+#     return text_splitter.split_documents(docs)
+
+import tempfile
+
+# Define functions for document processing
 def load_documents(file_path):
-    loader = PyPDFLoader(file_path)
+    if file_path.endswith('.pdf'):
+        loader = PyPDFLoader(file_path)
+    elif file_path.endswith('.docx'):
+        loader = UnstructuredWordDocumentLoader(file_path)
+    elif file_path.endswith('.txt'):
+        loader = TextLoader(file_path)
+    else:
+        raise ValueError(f"Unsupported file type for {file_path}")
     return loader.load()
 
 def split_documents(docs, chunk_size=1000, chunk_overlap=200, add_start_index=True):
@@ -89,8 +129,6 @@ def embed_and_index(docs):
 
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
-
-import tempfile
 
 
 # Function to read file content as string
@@ -138,24 +176,33 @@ def process_document(file_paths):
         else:
             raise ValueError(f"Unsupported file type for {file_path}")
 
-        pages = loader.load_and_split()
+        try:
+            pages = loader.load_and_split()
+        except Exception as e:
+            st.error(f"Error loading document {file_path}: {e}")
+            continue
+
         splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
         docs = splitter.split_documents(pages)
         all_docs.extend(docs)
     
     embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
-    retriever = FAISS.from_documents(docs, embeddings)
-    return retriever
+    vectorstore = FAISS.from_documents(all_docs, embeddings)
+    return vectorstore
 
 @st.cache_resource
 def process_documents(file_path):
-    loader = PyPDFLoader(file_path)
-    pages = loader.load_and_split()
-    splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-    docs = splitter.split_documents(pages)
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
-    retriever = FAISS.from_documents(docs, embeddings).as_retriever()
-    return retriever
+    try:
+        loader = PyPDFLoader(file_path)
+        pages = loader.load_and_split()
+        splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+        docs = splitter.split_documents(pages)
+        embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+        retriever = FAISS.from_documents(docs, embeddings).as_retriever()
+        return retriever
+    except Exception as e:
+        st.error(f"Error processing document {file_path}: {e}")
+        return None
 
 def handle_uploaded_files(uploaded_file):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -170,6 +217,78 @@ def handle_uploaded_file(uploaded_files):
             tmp.write(uploaded_file.getvalue())
             file_paths.append(tmp.name)
     return file_paths
+
+ #Summarize functions
+def theme_summary(docs):
+    llm = ChatOpenAI(temperature=0)
+
+    # Map
+    map_template = """The following is a set of documents
+    {docs}
+    Based on this list of docs, please identify the main themes.
+    Helpful Answer:"""
+    
+    map_prompt = PromptTemplate.from_template(map_template)
+    map_chain = LLMChain(llm=llm, prompt=map_prompt)
+
+    # Reduce
+    reduce_template = """The following is set of summaries:
+    {docs}
+    Take these docs and distill it into a final, consolidated summary of the document using the main themes as a guide. For each main idea, include essential supporting details that are necessary to understand the context and significance of the main points.
+    Keep your summary objective and unbiased.
+    Helpful Answer:"""
+    reduce_prompt = PromptTemplate.from_template(reduce_template)
+
+    reduce_chain = LLMChain(llm=llm, prompt=reduce_prompt)
+
+    combine_documents_chain = StuffDocumentsChain(
+        llm_chain=reduce_chain, document_variable_name="docs"
+    )
+
+    reduce_documents_chain = ReduceDocumentsChain(
+        combine_documents_chain=combine_documents_chain,
+        collapse_documents_chain=combine_documents_chain,
+        token_max=4000,
+    )
+
+    map_reduce_chain = MapReduceDocumentsChain(
+        llm_chain=map_chain,
+        reduce_documents_chain=reduce_documents_chain,
+        document_variable_name="docs",
+        return_intermediate_steps=False,
+    )
+
+    text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
+        chunk_size=1000, chunk_overlap=0
+    )
+    split_docs = text_splitter.split_documents(docs)
+
+    return map_reduce_chain.run(split_docs)
+
+def deep_summary(docs):
+    llm = ChatOpenAI(temperature=0)
+
+    splitter = TokenTextSplitter(model_name="gpt-3.5-turbo-16k", chunk_size=10000, chunk_overlap=100)
+    chunks = splitter.split_documents(docs)
+
+    summarize_chain = load_summarize_chain(llm=llm, chain_type="refine", verbose=True)
+    summary = summarize_chain.run(chunks)
+
+    return summary
+
+def save_summary_to_word(summary, file_name):
+    doc = Document()
+    doc.add_heading('Summary', 0)
+    doc.add_paragraph(summary)
+    doc_path = f"{file_name}.docx"
+    doc.save(doc_path)
+    return doc_path
+
+def download_transcript(transcript, file_name):
+    doc_path = f"{file_name}.txt"
+    with open(doc_path, 'w') as file:
+        file.write(transcript)
+    return doc_path
 
 def resume_cover_letter_page():
     prompt_template = """
@@ -278,24 +397,23 @@ def resume_cover_letter_page():
                 st.write("Please upload a Document to start.")
 
 
+# Modified document_search_retrieval_page function
 def document_search_retrieval_page():
     st.subheader("Document Search and Retrieval")
 
     uploaded_file = st.file_uploader("Upload Documents (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"], accept_multiple_files=True)
     if uploaded_file:
-        file_path = handle_uploaded_file(uploaded_file)
-        vectorstore = process_document(file_path)
-        # file_path = handle_uploaded_file(uploaded_file)
-        # docs = load_documents(file_path)
-        # all_splits = split_documents(docs)
-        # vectorstore = embed_and_index(all_splits)
-        pdf_retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 6})
+        file_paths = handle_uploaded_file(uploaded_file)
+        vectorstore = process_document(file_paths)
+        if not vectorstore:
+            return
 
-        # Create retriever tool with the vectorstore
+        retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 6})
+
         pdf_retriever_tool = create_retriever_tool(
-            pdf_retriever,
+            retriever,
             "document_question_and_answer_and_generation",
-            "Useful for when you need to answer questions about the uploaeded document. Input should be a search query or a given action for information retrieval and generation. Please answer thoroghly and thoughfully."
+            "Useful for when you need to answer questions about the uploaded document. Input should be a search query or a given action for information retrieval and generation. Please answer thoroughly and thoughtfully."
         )
 
         memory = ConversationBufferMemory()
@@ -318,10 +436,10 @@ def document_search_retrieval_page():
         with input_container:
             temperature = st.slider("Adjust chatbot specificity:", min_value=0.0, max_value=1.0, value=0.5, step=0.05)
             llm.temperature = temperature
-        
+
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you like to choose',('gpt-3.5-turbo-0125','gpt-4o'))
+            chat_model = st.selectbox('What model would you like to choose', ('gpt-3.5-turbo-0125', 'gpt-4'))
             llm.model_name = chat_model
 
         chat_container = st.container()
@@ -355,8 +473,95 @@ def document_search_retrieval_page():
                             st.markdown(tavily_search_result["output"])
                     except Exception as e:
                         st.error(f"An error occurred during web search: {e}")
+
+            # Add the new buttons for summarization
+            if st.button('Theme Summary'):
+                with st.spinner('Generating theme summary...'):
+                    try:
+                        docs = []
+                        for file_path in file_paths:
+                            docs.extend(load_documents(file_path))
+                        summary = theme_summary(docs)
+                        doc_path = save_summary_to_word(summary, "theme_summary")
+                        st.markdown(create_download_link(doc_path, "theme_summary.docx"), unsafe_allow_html=True)
+                    except Exception as e:
+                        st.error(f"An error occurred: {e}")
+
+            if st.button('Deep Summary'):
+                with st.spinner('Generating deep summary...'):
+                    try:
+                        docs = []
+                        for file_path in file_paths:
+                            docs.extend(load_documents(file_path))
+                        summary = deep_summary(docs)
+                        doc_path = save_summary_to_word(summary, "deep_summary")
+                        st.markdown(create_download_link(doc_path, "deep_summary.docx"), unsafe_allow_html=True)
+                    except Exception as e:
+                        st.error(f"An error occurred: {e}")
+
     else:
         st.write("Please upload a document to start.")
+
+    st.subheader("YouTube Video Transcription and Summary")
+
+    youtube_link = st.text_input("Enter YouTube Video Link:")
+
+    if st.button('Download Transcript'):
+        with st.spinner('Downloading transcript...'):
+            try:
+                loader = YoutubeLoader.from_youtube_url(youtube_link, language=["en", "en-US"])
+                transcript = loader.load()
+                
+                # Join the transcript text
+                all_text = "\n".join([chunk.page_content for chunk in transcript])
+                doc_path = download_transcript(all_text, "youtube_transcript")
+                
+                st.markdown(create_download_link(doc_path, "youtube_transcript.txt"), unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
+
+    if st.button('Summarize Video Content'):
+        with st.spinner('Summarizing video content...'):
+            try:
+                loader = YoutubeLoader.from_youtube_url(youtube_link, language=["en", "en-US"])
+                transcript = loader.load()
+
+                splitter = TokenTextSplitter(model_name="gpt-3.5-turbo-16k", chunk_size=10000, chunk_overlap=100)
+                chunks = splitter.split_documents(transcript)
+                
+                summary = deep_summary(chunks)
+                doc_path = save_summary_to_word(summary, "video_summary")
+                
+                st.markdown(create_download_link(doc_path, "video_summary.docx"), unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
+    
+    st.subheader("Ask Questions About Your CSV/Excel Data")
+
+    csv_file = st.file_uploader("Upload CSV/Excel File", type=["csv", "xlsx"])
+    if csv_file:
+        df = None
+        try:
+            if csv_file.name.endswith('.csv'):
+                df = pd.read_csv(csv_file)
+            elif csv_file.name.endswith('.xlsx'):
+                df = pd.read_excel(csv_file)
+        except Exception as e:
+            st.error(f"Error loading file: {e}")
+
+        if df is not None:
+            st.write("Data Preview:", df.head())
+            query = st.text_input("Ask a question about the data:")
+            if st.button('Query Data') and query:
+                with st.spinner('Processing your query...'):
+                    try:
+                        agent = Agent(df)
+                        response = agent.chat(query)
+                        st.write(f"Answer: {response}")
+                    except Exception as e:
+                        st.error(f"An error occurred: {e}")
+
+
 
 def vetting_assistant_page():
     st.title("Vetting Assistant Chatbot")
@@ -466,7 +671,7 @@ def vetting_assistant_page():
                     st.write(link)
 
 # Streamlit UI setup for multi-page application
-st.image('img/image.png')
+st.image('img/image2.png')
 st.title(":blue[Document Processing and Retrieval Application]")
 st.markdown('Generate engaging documents and chat over your files based on your direct quries - powered by Artificial Intelligence (OpenAI GPT-4 and GPT-3.5) Implemented by PCM')
         # '[stefanrmmr](https://www.linkedin.com/in/stefanrmmr/) - '
