@@ -37,6 +37,8 @@ import pandas as pd
 from pandasai import Agent
 from pandasai import SmartDataframe
 from pandasai.llm import OpenAI
+from langchain.agents.agent_types import AgentType
+from langchain_openai import ChatOpenAI, OpenAI
 
 
 
@@ -441,7 +443,7 @@ def document_search_retrieval_page():
 
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you like to choose', ('gpt-3.5-turbo-0125', 'gpt-4'))
+            chat_model = st.selectbox('What model would you like to choose', ('gpt-3.5-turbo-0125', 'gpt-4o'))
             llm.model_name = chat_model
 
         chat_container = st.container()
@@ -538,35 +540,35 @@ def document_search_retrieval_page():
             except Exception as e:
                 st.error(f"An error occurred: {e}")
     
-        st.subheader("Ask Questions About Your CSV/Excel Data")
+    #     st.subheader("Ask Questions About Your CSV/Excel Data")
 
-    csv_file = st.file_uploader("Upload CSV/Excel File", type=["csv", "xlsx"])
-    if csv_file:
-        df = None
-        try:
-            if csv_file.name.endswith('.csv'):
-                df = pd.read_csv(csv_file)
-            elif csv_file.name.endswith('.xlsx'):
-                df = pd.read_excel(csv_file)
-        except Exception as e:
-            st.error(f"Error loading file: {e}")
+    # csv_file = st.file_uploader("Upload CSV/Excel File", type=["csv", "xlsx"])
+    # if csv_file:
+    #     df = None
+    #     try:
+    #         if csv_file.name.endswith('.csv'):
+    #             df = pd.read_csv(csv_file)
+    #         elif csv_file.name.endswith('.xlsx'):
+    #             df = pd.read_excel(csv_file)
+    #     except Exception as e:
+    #         st.error(f"Error loading file: {e}")
 
-        if df is not None:
-            st.write("Data Preview:", df.head())
-            query = st.text_input("Ask a question about the data:")
-            if st.button('Query Data') and query:
-                with st.spinner('Processing your query...'):
-                    try:
-                        # Instantiate OpenAI LLM
-                        llm = OpenAI(api_token=os.environ["OPENAI_API_KEY"])
-                        sdf = SmartDataframe(df, config={"llm": llm})
-                        response = sdf.chat(query)
-                        st.write(f"Answer: {response}")
-                    except Exception as e:
-                        st.error(f"An error occurred: {e}")
+    #     if df is not None:
+    #         st.write("Data Preview:", df.head())
+    #         query = st.text_input("Ask a question about the data:")
+    #         if st.button('Query Data') and query:
+    #             with st.spinner('Processing your query...'):
+    #                 try:
+    #                     # Instantiate OpenAI LLM
+    #                     llm = OpenAI(api_token=os.environ["OPENAI_API_KEY"])
+    #                     sdf = SmartDataframe(df, config={"llm": llm})
+    #                     response = sdf.chat(query)
+    #                     st.write(f"Answer: {response}")
+    #                 except Exception as e:
+    #                     st.error(f"An error occurred: {e}")
 
-    else:
-        st.write("Please upload a CSV or Excel file to start.")
+    # else:
+    #     st.write("Please upload a CSV or Excel file to start.")
 
 
 
@@ -678,7 +680,7 @@ def vetting_assistant_page():
                     st.write(link)
 
 # Streamlit UI setup for multi-page application
-st.image('img/image.png')
+st.image('img/image2.png')
 st.title(":blue[Document Processing and Retrieval Application]")
 st.markdown('Generate engaging documents and chat over your files based on your direct quries - powered by Artificial Intelligence (OpenAI GPT-4 and GPT-3.5) Implemented by PCM')
         # '[stefanrmmr](https://www.linkedin.com/in/stefanrmmr/) - '
