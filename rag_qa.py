@@ -272,7 +272,7 @@ def theme_summary(docs):
 def deep_summary(docs):
     llm = ChatOpenAI(temperature=0)
 
-    splitter = TokenTextSplitter(model_name="gpt-3.5-turbo-16k", chunk_size=10000, chunk_overlap=100)
+    splitter = TokenTextSplitter(model_name="gpt-4o-mini", chunk_size=10000, chunk_overlap=100)
     chunks = splitter.split_documents(docs)
 
     summarize_chain = load_summarize_chain(llm=llm, chain_type="refine", verbose=True)
@@ -359,7 +359,7 @@ def resume_cover_letter_page():
             
             input_container = st.container()
             with input_container:
-                chat_model = st.selectbox('What model would you live to choose',('gpt-3.5-turbo-0125','gpt-4o'))
+                chat_model = st.selectbox('What model would you live to choose',('gpt-4o-mini','gpt-4o'))
                 llm.model_name = chat_model
             
             # col1, col2, col3 = st.columns([5, 5, 5])
@@ -443,7 +443,7 @@ def document_search_retrieval_page():
 
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you like to choose', ('gpt-3.5-turbo-0125', 'gpt-4o'))
+            chat_model = st.selectbox('What model would you like to choose', ('gpt-4o-mini', 'gpt-4o'))
             llm.model_name = chat_model
 
         chat_container = st.container()
@@ -530,7 +530,7 @@ def document_search_retrieval_page():
                 loader = YoutubeLoader.from_youtube_url(youtube_link, language=["en", "en-US"])
                 transcript = loader.load()
 
-                splitter = TokenTextSplitter(model_name="gpt-3.5-turbo-16k", chunk_size=10000, chunk_overlap=100)
+                splitter = TokenTextSplitter(model_name="gpt-4o-mini", chunk_size=10000, chunk_overlap=100)
                 chunks = splitter.split_documents(transcript)
                 
                 summary = deep_summary(chunks)
@@ -623,7 +623,7 @@ def vetting_assistant_page():
         
         input_container = st.container()
         with input_container:
-            chat_model = st.selectbox('What model would you like to choose',('gpt-3.5-turbo-0125','gpt-4o'))
+            chat_model = st.selectbox('What model would you like to choose',('gpt-4o-mini','gpt-4o'))
             llm.model_name = chat_model
 
         st.write("Ask any question related to the vetting process:")
